@@ -162,7 +162,7 @@ class Inflect {
      * @param string $string String to adjust.
      * @return string The adjusted string.
      */
-    public static function pluralize_if($count, $string) {
+    public static function pluralizeCount($count, $string) {
         if ($count != 1)
             return self::pluralize($string);
         else

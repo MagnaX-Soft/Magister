@@ -11,7 +11,7 @@ abstract class Model {
      * The PDO object
      * @var PDO 
      */
-    protected $db;
+    protected $pdo;
 
     /**
      * The table related to the current Model.
@@ -29,7 +29,7 @@ abstract class Model {
      * Connects to the database
      */
     public function __construct() {
-        $this->db = DB::getInstance()->db;
+        $this->pdo = DB::getInstance()->pdo;
     }
 
     /**
@@ -51,14 +51,14 @@ abstract class Model {
 
     /**
      * Prefixes tables.
-     * @global string $DBConfig
+     * @global string $dbConfig
      * @param string $table
      * @return string 
      */
     private function getTableName($table) {
-        global $DBConfig;
+        global $dbConfig;
 
-        return (!empty($DBConfig['prefix'])) ? $DBConfig['prefix'] . '_' . $table : $table;
+        return (!empty($dbConfig['prefix'])) ? $dbConfig['prefix'] . '_' . $table : $table;
     }
 
     /**
@@ -68,7 +68,7 @@ abstract class Model {
     public function getClass() {
         return $this->class;
     }
-    
+
     /**
      * Gets a single record from the model by it's ID. If many records match the 
      * ID, only the first is returned.
@@ -97,19 +97,18 @@ abstract class Model {
      */
     protected function doGet($table, array $params = null, $cond = null, array $order = null, $limit = null, $select = null) {
         $sql = 'SELECT ';
-        if (!is_null($select) && !empty($select)) {
+        $selectString = '*';
+        if (!empty($select)) {
             if (is_string($select)) {
-                $sql .= $select;
+                $selectString = $select;
             } elseif (is_array($select)) {
-                $sql .= implode(', ', $select);
+                $selectString = implode(', ', $select);
             } else {
                 return false;
             }
-        } else {
-            $sql .= '*';
         }
-        $sql .= ' FROM ' . $this->getTableName($table);
-        if (!is_null($cond) && !empty($cond)) {
+        $sql .= $selectString . ' FROM ' . $this->getTableName($table);
+        if (!empty($cond)) {
             $sql .= ' WHERE ';
             if (is_string($cond)) {
                 $sql .= $cond;
@@ -119,24 +118,22 @@ abstract class Model {
                 return false;
             }
         }
-        if (!is_null($order) && !empty($order)) {
+        if (!empty($order)) {
             $sql .= ' ORDER BY ';
             $strings = array();
-            foreach ($order as $field => $dir) {
+            foreach ($order as $field => $dir)
                 $strings[] = $field . ' ' . strtoupper($dir);
-            }
             $sql .= implode(', ', $strings);
         }
         if (!is_null($limit)) {
             $sql .= ' LIMIT ' . $limit;
         }
 
-        $query = $this->db->prepare($sql);
-        if (is_null($params)) {
+        $query = $this->pdo->prepare($sql);
+        if (is_null($params))
             $query->execute();
-        } else {
+        else
             $query->execute($params);
-        }
         return $query;
     }
 
@@ -170,12 +167,11 @@ abstract class Model {
         }
         $sql = 'INSERT INTO ' . $this->getTableName($table) . '(' . implode(', ', $fields) . ') VALUES (' . implode(', ', $values) . ')';
 
-        $query = $this->db->prepare($sql);
-        if ($query->execute($params) === true) {
+        $query = $this->pdo->prepare($sql);
+        if ($query->execute($params) === true)
             return true;
-        } else {
+        else
             return $query;
-        }
     }
 
     /**
@@ -200,7 +196,7 @@ abstract class Model {
         }
         $sql = 'UPDATE ' . $this->getTableName($table) . ' SET ' . implode(' = ? , ', $fields) . ' = ?  WHERE ' . implode(' AND ', $conds);
 
-        $query = $this->db->prepare($sql);
+        $query = $this->pdo->prepare($sql);
         if ($query->execute($params) === true) {
             return true;
         } else {
@@ -226,7 +222,7 @@ abstract class Model {
         }
         $sql = 'DELETE FROM ' . $this->getTableName($table) . ' WHERE ' . implode(' AND ', $conds);
 
-        $query = $this->db->prepare($sql);
+        $query = $this->pdo->prepare($sql);
         if ($query->execute($params) === true) {
             return true;
         } else {
@@ -247,7 +243,7 @@ class DB {
      * The PDO object
      * @var PDO 
      */
-    public $db;
+    public $pdo;
 
     /**
      * The instance of the class
@@ -259,13 +255,9 @@ class DB {
      * Class constructor
      */
     private function __construct() {
-        global $DBConfig;
+        global $dbConfig;
 
-        try {
-            $this->db = new PDO("mysql:host={$DBConfig['host']};dbname={$DBConfig['name']};port={$DBConfig['port']}", $DBConfig['user'], $DBConfig['pass']);
-        } catch (PDOException $e) {
-            die('Sorry, the database is currently unavailable.' . "\n" . $e->getMessage());
-        }
+        $this->pdo = new PDO("mysql:host={$dbConfig['host']};dbname={$dbConfig['name']};port={$dbConfig['port']}", $dbConfig['user'], $dbConfig['pass']);
     }
 
     /**

@@ -7,12 +7,12 @@
  */
 date_default_timezone_set('America/Toronto');
 
-global $DBConfig, $routingConfig, $passwordHash, $compatibilityMode, $sessionConfig;
+global $dbConfig, $routingConfig, $passwordHash, $compatibilityMode, $sessionConfig;
 
 /**
  * DB configuration 
  */
-$DBConfig = array(
+$dbConfig = array(
     'host' => 'localhost',
     'name' => '',
     'user' => '',

@@ -33,7 +33,7 @@ class Session {
         session_name($sessionConfig['name']);
         session_start();
         if (!isset($_SESSION['user'])) {
-            $_SESSION['login'] = false; 
+            $_SESSION['login'] = false;
         }
     }
 
@@ -74,21 +74,19 @@ class Session {
         $return = '';
 
         foreach ($_SESSION['messages'] as $key => $message) {
-            if ($type != 'all') {
-                if ($message['type'] != $type)
-                    continue;
-            }
+            if ($type != 'all' && $message['type'] != $type)
+                continue;
             $theMessages[$key] = $message;
         }
         foreach ($theMessages as $key => $message) {
             unset($_SESSION['messages'][$key]);
-            if (!$format)
-                continue;
-            $return .= '<div class="span-12 prepend-6 append-6 last">';
-            $return .= "<div class=\"{$message['type']}\">{$message['content']}</div>";
-            $return .= '</div>';
+            if ($format) {
+                $return .= '<div class="span-12 prepend-6 append-6 last">';
+                $return .= "<div class=\"{$message['type']}\">{$message['content']}</div>";
+                $return .= '</div>';
+            }
         }
-        return (empty($theMessages)) ? false : (($format)? $return : $theMessages);
+        return (empty($theMessages)) ? false : (($format) ? $return : $theMessages);
     }
 
 }

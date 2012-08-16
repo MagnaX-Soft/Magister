@@ -43,17 +43,17 @@ class UrlHelper {
      * @return string 
      */
     public static function query(array $query) {
-        $single_query = array();
+        $singleQuery = array();
         foreach ($query as $name => $key) {
             if (is_array($key)) {
                 $name .= '[]';
                 foreach ($key as $value) 
-                    $single_query[] = $name . '=' . $value;
+                    $singleQuery[] = $name . '=' . $value;
             } else {
-                $single_query[] = $name . '=' . $key;
+                $singleQuery[] = $name . '=' . $key;
             }
         }
-        return '?' . implode('&', $single_query);
+        return '?' . implode('&', $singleQuery);
     }
 
 }
