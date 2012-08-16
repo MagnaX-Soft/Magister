@@ -28,3 +28,17 @@ class RoutingException extends MagisterException {
 class UrlException extends MagisterException {
     
 }
+
+/**
+ * UndefinedMethodException. Thrown when an app tried to call an undefined 
+ * method.
+ * @package Magister
+ * @subpackage Error 
+ */
+class UndefinedMethodException extends MagisterException {
+    
+}
+
+class UnknownDataSourceException extends MagisterException {
+    
+}

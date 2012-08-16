@@ -8,8 +8,8 @@
 abstract class Model {
 
     /**
-     * The PDO object
-     * @var PDO 
+     * The DataSource object
+     * @var DataSource 
      */
     protected $pdo;
 
@@ -20,16 +20,34 @@ abstract class Model {
     protected $table;
 
     /**
-     * The class associated with single rows of the current Model
+     * The class associated with single rows of the current Model.
      * @var string 
      */
     protected $class;
 
     /**
+     * The name of the primary key in the associated table.
+     * @var string
+     */
+    public $primaryKey = 'id';
+
+    /**
+     * Has many relationship
+     * @var array 
+     */
+    public $hasMany = array();
+
+    /**
+     * Has one relationship
+     * @var array 
+     */
+    public $hasOne = array();
+
+    /**
      * Connects to the database
      */
     public function __construct() {
-        $this->pdo = DB::getInstance()->pdo;
+        $this->pdo = DB::getDataSource();
     }
 
     /**
@@ -50,15 +68,32 @@ abstract class Model {
     }
 
     /**
+     * Magic __call method.
+     * 
+     * If the called function starts with "getBy", consider it valid and send it 
+     * to Model::getByField().
+     * 
+     * @param string $name
+     * @param array $arguments
+     * @return RowObject|bool
+     * @throws UndefinedMethodException 
+     */
+    public function __call($name, $arguments) {
+        if (strpos($name, 'getBy') !== false)
+            return $this->getByField(strtolower(substr($name, 5)), $arguments);
+
+        throw new UndefinedMethodException('No method matches ' . get_class($this) . '::' . $name . '()');
+    }
+
+    /**
      * Prefixes tables.
      * @global string $dbConfig
-     * @param string $table
      * @return string 
      */
-    private function getTableName($table) {
+    public function getTable() {
         global $dbConfig;
 
-        return (!empty($dbConfig['prefix'])) ? $dbConfig['prefix'] . '_' . $table : $table;
+        return (!empty($dbConfig['prefix'])) ? $dbConfig['prefix'] . '_' . $this->table : $this->table;
     }
 
     /**
@@ -70,24 +105,53 @@ abstract class Model {
     }
 
     /**
-     * Gets a single record from the model by it's ID. If many records match the 
-     * ID, only the first is returned.
-     * @param int $id
+     * Gets a single record from the model by it a field. If many records match 
+     * the condition, only the first is returned.
+     * @param string $field
+     * @param array $params
      * @return RowObject|bool
      */
-    public function getByID($id) {
-        if ($this->doGetCount($this->table, array($id), 'id = ?') == 0)
+    protected function getByField($field, array $params) {
+        if ($this->doGetCount($params, $this->getTable() . '.' . $field . ' = ?') == 0)
             return false;
 
-        $release = $this->doGet($this->table, array($id), 'id = ?');
-        return $release->fetchObject($this->class);
+        $release = $this->doGet($params, $this->getTable() . '.' . $field . ' = ?');
+        return $release->fetchObject($this->getClass());
+    }
+
+    /**
+     * Get all the rows matching a set of conditions (defaults to none).
+     * 
+     * @param int $start Sets the location of the first record.
+     * @param int $limit Limit the number of results returned.
+     * @param string|array $cond Query conditions.
+     * @param array $params Query parameters.
+     * @return PDOStatement
+     */
+    public function getAll($start = 0, $limit = 20, $cond = null, $params = null) {
+        if (is_null($start)) {
+            return $this->doGet($params, $cond, array($this->getTable() . '.' . $this->primaryKey => 'ASC'));
+        } else {
+            return $this->doGet($$params, $cond, array($this->getTable() . '.' . $this->primaryKey => 'ASC'), (int) $start . ', ' . (int) $limit);
+        }
+    }
+
+    /**
+     * The tne number of rows matching a set of conditions (defaults to none).
+     * 
+     * @param string|array $cond Query conditions.
+     * @param array $params Query parameters.
+     * @return int 
+     */
+    public function getAllCount($cond = null, $params = null) {
+        return $this->doGetCount($cond, $params);
     }
 
     /**
      * Gets all the columns from $table, accepts $params for prepared 
      * statements, $cond for conditions, $order for ordering and $limit for 
      * limits.
-     * @param string $table
+     * 
      * @param array $params
      * @param array|string $cond
      * @param array $order
@@ -95,28 +159,48 @@ abstract class Model {
      * @param array|string $select
      * @return PDOStatement 
      */
-    protected function doGet($table, array $params = null, $cond = null, array $order = null, $limit = null, $select = null) {
+    protected function doGet(array $params = null, $cond = null, array $order = null, $limit = null, $select = array()) {
+        $join = '';
+
         $sql = 'SELECT ';
-        $selectString = '*';
-        if (!empty($select)) {
-            if (is_string($select)) {
-                $selectString = $select;
-            } elseif (is_array($select)) {
-                $selectString = implode(', ', $select);
-            } else {
-                return false;
+        if (is_string($select) && $select != '*') {
+            $select = array($select);
+        } elseif ((is_string($select) && $select == '*') || empty($select)) {
+            $select = array('*');
+            if (!empty($this->hasOne) && $join) {
+                $select = array();
+                foreach ($this->doRaw('DESCRIBE ' . $this->getTable())->fetchAll(PDO::FETCH_COLUMN) as $key) {
+                    if (array_key_exists($key, $this->hasOne)) {
+                        $field = getValue($this->hasOne[$key], 'field', compat_strstr($key, '_id', true));
+                        $name = getValue($this->hasOne[$key], 'name', ucfirst($field));
+                        $model = getValue($this->hasOne[$key], 'model', ucfirst(Inflect::pluralize($field) . 'Model'));
+                        $modelObject = new $model;
+                        $table = $modelObject->getTable();
+                        $pk = $modelObject->primaryKey;
+                        $join[$table] = $this->getTable() . '.' . $key . ' = ' . $table . '.' . $pk;
+                        $select[] = $table . '.' . $pk . ' AS ' . $name . '_' . $pk;
+                    } else {
+                        $select[] = $this->getTable() . '.' . $key;
+                    }
+                }
+            }
+        } else {
+            return false;
+        }
+        $sql .= implode(', ', $select) . ' FROM ' . $this->getTable();
+        if (!empty($join)) {
+            foreach ($join as $table => $on) {
+                $sql .= ' LEFT JOIN ' . $table . ' ON ' . $on;
             }
         }
-        $sql .= $selectString . ' FROM ' . $this->getTableName($table);
-        if (!empty($cond)) {
-            $sql .= ' WHERE ';
-            if (is_string($cond)) {
-                $sql .= $cond;
-            } elseif (is_array($cond)) {
-                $sql .= implode(' AND ', $cond);
-            } else {
-                return false;
-            }
+        if (!empty($cond) && is_string($cond)) {
+            $sql .= ' WHERE ' . $cond;
+        } elseif (!empty($cond) && is_array($cond)) {
+            $sql .= ' WHERE ' . implode(' AND ', $cond);
+        } elseif (empty($cond)) {
+            
+        } else {
+            return false;
         }
         if (!empty($order)) {
             $sql .= ' ORDER BY ';
@@ -129,6 +213,8 @@ abstract class Model {
             $sql .= ' LIMIT ' . $limit;
         }
 
+        var_dump($sql);
+        ob_flush();
         $query = $this->pdo->prepare($sql);
         if (is_null($params))
             $query->execute();
@@ -139,14 +225,13 @@ abstract class Model {
 
     /**
      * Counts the rows from $table, accepts $params and $cond.
-     * @uses Model::get()
-     * @param string $table
+     * @uses Model::doGet()
      * @param array $params
      * @param array|string $cond
      * @return int
      */
-    protected function doGetCount($table, array $params = null, $cond = null) {
-        $query = $this->doGet($table, $params, $cond, null, null, 'COUNT(*)');
+    protected function doGetCount(array $params = null, $cond = null) {
+        $query = $this->doGet($params, $cond, null, null, 'COUNT(*)');
         return (int) $query->fetchColumn();
     }
 
@@ -165,7 +250,7 @@ abstract class Model {
         for ($i = 0; $i < count($fields); $i++) {
             $values[] = '?';
         }
-        $sql = 'INSERT INTO ' . $this->getTableName($table) . '(' . implode(', ', $fields) . ') VALUES (' . implode(', ', $values) . ')';
+        $sql = 'INSERT INTO ' . $this->getTable($table) . '(' . implode(', ', $fields) . ') VALUES (' . implode(', ', $values) . ')';
 
         $query = $this->pdo->prepare($sql);
         if ($query->execute($params) === true)
@@ -194,7 +279,7 @@ abstract class Model {
         } else {
             return false;
         }
-        $sql = 'UPDATE ' . $this->getTableName($table) . ' SET ' . implode(' = ? , ', $fields) . ' = ?  WHERE ' . implode(' AND ', $conds);
+        $sql = 'UPDATE ' . $this->getTable($table) . ' SET ' . implode(' = ? , ', $fields) . ' = ?  WHERE ' . implode(' AND ', $conds);
 
         $query = $this->pdo->prepare($sql);
         if ($query->execute($params) === true) {
@@ -220,7 +305,7 @@ abstract class Model {
         } else {
             return false;
         }
-        $sql = 'DELETE FROM ' . $this->getTableName($table) . ' WHERE ' . implode(' AND ', $conds);
+        $sql = 'DELETE FROM ' . $this->getTable($table) . ' WHERE ' . implode(' AND ', $conds);
 
         $query = $this->pdo->prepare($sql);
         if ($query->execute($params) === true) {
@@ -228,6 +313,25 @@ abstract class Model {
         } else {
             return $query;
         }
+    }
+
+    /**
+     * Executes a raw SQL query.
+     * @param string $sql
+     * @param array $params
+     * @return resource 
+     */
+    protected function doRaw($sql, array $params = null) {
+        $query = $this->pdo->prepare($sql);
+        if (is_null($params))
+            $query->execute();
+        else
+            $query->execute($params);
+        return $query;
+    }
+
+    public function dumpQueries() {
+        return $this->pdo->queries;
     }
 
 }
@@ -240,42 +344,41 @@ abstract class Model {
 class DB {
 
     /**
-     * The PDO object
-     * @var PDO 
+     * Returns a datasource.
+     *
+     * @global array $dbConfig
+     * @return DataSource
+     * @throws UnknownDataSourceException 
      */
-    public $pdo;
-
-    /**
-     * The instance of the class
-     * @var DB 
-     */
-    private static $instance;
-
-    /**
-     * Class constructor
-     */
-    private function __construct() {
+    public static function getDataSource() {
         global $dbConfig;
 
-        $this->pdo = new PDO("mysql:host={$dbConfig['host']};dbname={$dbConfig['name']};port={$dbConfig['port']}", $dbConfig['user'], $dbConfig['pass']);
-    }
-
-    /**
-     * Clone magic function 
-     */
-    private function __clone() {
-        
-    }
-
-    /**
-     * Returns current instance of the DB object
-     * @return DB 
-     */
-    public static function getInstance() {
-        if (self::$instance == NULL) {
-            self::$instance = new DB();
+        switch ($dbConfig['type']) {
+            case 'mysql':
+                return new MySQLDataSource($dbConfig);
+            default:
+                throw new UnknownDataSourceException('The ' . $dbConfig['type'] . 'datasource is not registered in this application');
         }
-        return self::$instance;
+    }
+
+}
+
+/**
+ * DataSource class. 
+ */
+abstract class DataSource extends PDO {
+
+    public $queries = array();
+
+    /**
+     * Logs the statement and calls PDO::prepare.
+     * @param string $statement
+     * @param array $driver_options
+     * @return PDOStatement
+     */
+    public function prepare($statement, $driver_options = array()) {
+        $this->queries[] = $statement;
+        return parent::prepare($statement, $driver_options);
     }
 
 }
@@ -292,5 +395,67 @@ abstract class RowObject {
      * @var Model 
      */
     protected $model;
+
+    /**
+     * The associated model name.
+     * @var string
+     */
+    protected $modelName;
+
+    /**
+     * Instanciates the associated model.
+     */
+    public function __construct() {
+        $this->loadModel();
+        $this->loadRelations();
+    }
+
+    /**
+     * Loads the model.
+     */
+    public function loadModel() {
+        if (empty($this->modelName))
+            $this->modelName = Inflect::pluralize(get_class($this)) . 'Model';
+
+        if (!is_a($this->model, $this->modelName))
+            $this->model = new $this->modelName;
+    }
+
+    public function loadRelations() {
+        if (isset($this->relationTemp) && array($this->relationTemp)) {
+            foreach ($this->relationTemp as $name => $value) {
+                list($foreign_name, $field) = explode('_', $name);
+                foreach ($this->model->hasOne as $key => $info) {
+                    $field = getValue($info, 'field', compat_strstr($key, '_', true));
+                    $name = getValue($info, 'name', ucfirst($field));
+                    $model = getValue($info, 'model', ucfirst(Inflect::pluralize($field) . 'Model'));
+
+                    if ($name == $foreign_name) {
+                        $reflexModel = new ReflectionClass($model);
+                        $this->{strtolower($name)} = $reflexModel->newInstance()->getByID($value);
+                    }
+                }
+            }
+            unset($this->relationTemp);
+        }
+/* TODO: FIXME!
+        foreach ($this->model->hasMany as $name => $info) {
+            $model = ucfirst(Inflect::pluralize($name)) . 'Model';
+            $field_name = getValue($info, 'name', Inflect::singularize($name));
+            $foreign_field = getValue($info, 'field', Inflect::singularize($name) . '_' . $this->model->primaryKey);
+            $reflexModel = new ReflectionClass($model);
+            $modelInst = $reflexModel->newInstance();
+            $responce = $modelInst->getAll(null, null, $foreign_field . ' = ?', array($this->{$this->model->primaryKey}));
+            while ($row = $responce->fetchObject($modelInst->getClass()))
+                $this->{strtolower($field_name)}[] = $row;
+        }*/
+    }
+
+    public function __set($name, $value) {
+        if (strpos($name, '_')) {
+            $this->relationTemp[$name] = $value;
+        } else
+            $this->{$name} = ($name == 'id') ? (int) $value : $value;
+    }
 
 }

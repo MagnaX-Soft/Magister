@@ -10,6 +10,7 @@ spl_autoload_register(array('Autoload', 'loadException'));
 spl_autoload_register(array('Autoload', 'loadController'));
 spl_autoload_register(array('Autoload', 'loadModel'));
 spl_autoload_register(array('Autoload', 'loadHelper'));
+spl_autoload_register(array('Autoload', 'loadDataSource'));
 spl_autoload_register(array('Autoload', 'loadCore'));
 spl_autoload_register(array('Autoload', 'loadLib'));
 spl_autoload_register(array('Autoload', 'loadObject'));
@@ -63,7 +64,7 @@ class Autoload {
      */
     public static function loadModel($name) {
         if (strpos($name, 'Model') !== false) {
-            return self::loadApp('Models' . DS . Inflect::pluralize(compat_strstr($name, 'Model', true)) . 'Model');
+            return self::loadApp('Models' . DS . $name);
         }
         return false;
     }
@@ -115,6 +116,19 @@ class Autoload {
     public static function loadHelper($name) {
         if (strpos($name, 'Helper') !== false) {
             self::loadLib('Helper' . DS . ucfirst(compat_strstr($name, 'Helper', true)));
+        }
+        return false;
+    }
+
+    /**
+     * Searches for and loads a datasource by name, returning true if found and 
+     * loaded, false otherwise.
+     * @param string $name Name of the datasource.
+     * @return bool 
+     */
+    public static function loadDataSource($name) {
+        if (strpos($name, 'DataSource') !== false) {
+            self::loadLib('DataSource' . DS . compat_strstr($name, 'DataSource', true));
         }
         return false;
     }

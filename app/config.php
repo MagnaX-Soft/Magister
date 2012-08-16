@@ -13,9 +13,10 @@ global $dbConfig, $routingConfig, $passwordHash, $compatibilityMode, $sessionCon
  * DB configuration 
  */
 $dbConfig = array(
+    'type' => 'mysql',
     'host' => 'localhost',
-    'name' => '',
-    'user' => '',
+    'name' => 'magister',
+    'user' => 'root',
     'pass' => '',
     'port' => 3306,
     'prefix' => 'mag'

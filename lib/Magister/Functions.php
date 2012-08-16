@@ -94,7 +94,6 @@ function run() {
         displayError('The requested URL was not found. Please <a href="javascript:history.go(-1)">go back</a>.<pre>' . $e->getMessage() . '</pre>', 'Page Not Found', '404 Not Found');
     } catch (Exception $e) {
         ob_clean();
-        var_dump($e);
         displayError($e->getMessage() . ' in ' . $e->getFile() . ' on line ' . $e->getLine() . '.');
     }
     ob_end_flush();
