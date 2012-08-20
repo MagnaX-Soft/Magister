@@ -50,7 +50,7 @@ class Autoload {
      * @return bool 
      */
     public static function loadAppLib($name) {
-        return self::loadApp('lib' . DS . $name);
+        return self::loadApp('Lib' . DS . $name);
     }
 
     /**
