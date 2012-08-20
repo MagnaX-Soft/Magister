@@ -25,3 +25,14 @@ location on your server, outside of the `DocumentRoot`, and the app to the
 the `LIB_DIR` constant in the application's `index.php` file to point to the 
 directory containing the `Magister` folder. This method allows multiple apps to 
 share the same library.
+
+Documentation
+-------------
+At the moment, there is only API-level documentation, which can be procured by 
+running the following command in the root directory (the one that contains 
+`lib`):
+
+    phpdoc run
+
+Do not fear, as we are building the documentation of Magister, and in a short 
+while, you'll know all you need to build websites left and right!
