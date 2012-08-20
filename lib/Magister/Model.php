@@ -5,7 +5,7 @@
  * @package Magister
  * @subpackage Model
  */
-abstract class Model {
+abstract class Model implements Serializable {
 
     /**
      * The DataSource object
@@ -32,6 +32,12 @@ abstract class Model {
     public $primaryKey = 'id';
 
     /**
+     * The default order of the rows in the table.
+     * @var array 
+     */
+    protected $order = array('id' => 'ASC');
+
+    /**
      * Has many relationship
      * @var array 
      */
@@ -51,19 +57,20 @@ abstract class Model {
     }
 
     /**
-     * Array of serializable properties.
+     * There are no runtime defined properties in models, therefore, the 
+     * serialized representation is null.
      * @access private
-     * @return array
+     * @return null
      */
-    public function __sleep() {
-        return array('table', 'class');
+    public function serialize() {
+        return null;
     }
 
     /**
      * Re-connects to the database upon unserialization. 
      * @access private
      */
-    public function __wakeup() {
+    public function unserialize($data) {
         $this->__construct();
     }
 
@@ -130,9 +137,9 @@ abstract class Model {
      */
     public function getAll($start = 0, $limit = 20, $cond = null, $params = null) {
         if (is_null($start)) {
-            return $this->doGet($params, $cond, array($this->getTable() . '.' . $this->primaryKey => 'ASC'));
+            return $this->doGet($params, $cond);
         } else {
-            return $this->doGet($$params, $cond, array($this->getTable() . '.' . $this->primaryKey => 'ASC'), (int) $start . ', ' . (int) $limit);
+            return $this->doGet($params, $cond, array(), (int) $start . ', ' . (int) $limit);
         }
     }
 
@@ -148,6 +155,19 @@ abstract class Model {
     }
 
     /**
+     * Deletes a row in the database.
+     * @param RowObject $row
+     * @return boolean 
+     */
+    public function delete(RowObject $row) {
+        if ($this->doDel(array($row->{$this->primaryKey}), $this->primaryKey . ' = ?') == 1) {
+            return true;
+        }
+        $row->error = $this->pdo->errorInfo();
+        return false;
+    }
+
+    /**
      * Gets all the columns from $table, accepts $params for prepared 
      * statements, $cond for conditions, $order for ordering and $limit for 
      * limits.
@@ -159,7 +179,7 @@ abstract class Model {
      * @param array|string $select
      * @return PDOStatement 
      */
-    protected function doGet(array $params = null, $cond = null, array $order = null, $limit = null, $select = array()) {
+    protected function doGet(array $params = null, $cond = null, array $order = array(), $limit = null, $select = array()) {
         $join = '';
 
         $sql = 'SELECT ';
@@ -167,13 +187,13 @@ abstract class Model {
             $select = array($select);
         } elseif ((is_string($select) && $select == '*') || empty($select)) {
             $select = array('*');
-            if (!empty($this->hasOne) && $join) {
+            if (!empty($this->hasOne)) {
                 $select = array();
                 foreach ($this->doRaw('DESCRIBE ' . $this->getTable())->fetchAll(PDO::FETCH_COLUMN) as $key) {
                     if (array_key_exists($key, $this->hasOne)) {
                         $field = getValue($this->hasOne[$key], 'field', compat_strstr($key, '_id', true));
                         $name = getValue($this->hasOne[$key], 'name', ucfirst($field));
-                        $model = getValue($this->hasOne[$key], 'model', ucfirst(Inflect::pluralize($field) . 'Model'));
+                        $model = getValue($this->hasOne[$key], 'model', ucfirst(Inflect::pluralize($field)) . 'Model');
                         $modelObject = new $model;
                         $table = $modelObject->getTable();
                         $pk = $modelObject->primaryKey;
@@ -202,19 +222,18 @@ abstract class Model {
         } else {
             return false;
         }
-        if (!empty($order)) {
-            $sql .= ' ORDER BY ';
-            $strings = array();
-            foreach ($order as $field => $dir)
-                $strings[] = $field . ' ' . strtoupper($dir);
-            $sql .= implode(', ', $strings);
+        if (empty($order)) {
+            $order = $this->order;
         }
+        $sql .= ' ORDER BY ';
+        $orderStrings = array();
+        foreach ($order as $field => $dir)
+            $orderStrings[] = $this->getTable() . '.' . $field . ' ' . strtoupper($dir);
+        $sql .= implode(', ', $orderStrings);
         if (!is_null($limit)) {
             $sql .= ' LIMIT ' . $limit;
         }
 
-        var_dump($sql);
-        ob_flush();
         $query = $this->pdo->prepare($sql);
         if (is_null($params))
             $query->execute();
@@ -231,18 +250,17 @@ abstract class Model {
      * @return int
      */
     protected function doGetCount(array $params = null, $cond = null) {
-        $query = $this->doGet($params, $cond, null, null, 'COUNT(*)');
+        $query = $this->doGet($params, $cond, array(), null, 'COUNT(*)');
         return (int) $query->fetchColumn();
     }
 
     /**
      * Inserts a row into the given table.
-     * @param string $table
      * @param array $params
      * @param array $fields
      * @return bool|PDOStatement 
      */
-    protected function doPut($table, array $params, array $fields) {
+    protected function doPut(array $params, array $fields) {
         if (count($fields) != count($params)) {
             return false;
         }
@@ -250,7 +268,7 @@ abstract class Model {
         for ($i = 0; $i < count($fields); $i++) {
             $values[] = '?';
         }
-        $sql = 'INSERT INTO ' . $this->getTable($table) . '(' . implode(', ', $fields) . ') VALUES (' . implode(', ', $values) . ')';
+        $sql = 'INSERT INTO ' . $this->getTable() . '(' . implode(', ', $fields) . ') VALUES (' . implode(', ', $values) . ')';
 
         $query = $this->pdo->prepare($sql);
         if ($query->execute($params) === true)
@@ -261,13 +279,12 @@ abstract class Model {
 
     /**
      * Updates an existing row in the database.
-     * @param string $table
      * @param array $params
      * @param array $fields
      * @param array|string $cond 
      * @return bool|PDOStatement 
      */
-    protected function doUp($table, array $params, array $fields, $cond) {
+    protected function doUp(array $params, array $fields, $cond) {
         if (count($fields) > count($params)) {
             return false;
         }
@@ -279,7 +296,7 @@ abstract class Model {
         } else {
             return false;
         }
-        $sql = 'UPDATE ' . $this->getTable($table) . ' SET ' . implode(' = ? , ', $fields) . ' = ?  WHERE ' . implode(' AND ', $conds);
+        $sql = 'UPDATE ' . $this->getTable() . ' SET ' . implode(' = ? , ', $fields) . ' = ?  WHERE ' . implode(' AND ', $conds);
 
         $query = $this->pdo->prepare($sql);
         if ($query->execute($params) === true) {
@@ -291,21 +308,17 @@ abstract class Model {
 
     /**
      * Deletes a row/group of rows from the database
-     * @param string $table
      * @param array $params
      * @param array|string $cond
      * @return bool|PDOStatement 
      */
-    protected function doDel($table, array $params, $cond) {
-        $conds = array();
+    protected function doDel(array $params, $cond) {
         if (is_string($cond)) {
-            $conds[] = $cond;
-        } elseif (is_array($cond)) {
-            $conds = $cond;
-        } else {
+            $cond = array($cond);
+        } elseif (!is_array($cond)) {
             return false;
         }
-        $sql = 'DELETE FROM ' . $this->getTable($table) . ' WHERE ' . implode(' AND ', $conds);
+        $sql = 'DELETE FROM ' . $this->getTable() . ' WHERE ' . implode(' AND ', $cond);
 
         $query = $this->pdo->prepare($sql);
         if ($query->execute($params) === true) {
@@ -330,6 +343,10 @@ abstract class Model {
         return $query;
     }
 
+    /**
+     * Returns the list of queries.
+     * @return array 
+     */
     public function dumpQueries() {
         return $this->pdo->queries;
     }
@@ -411,6 +428,49 @@ abstract class RowObject {
     }
 
     /**
+     * Inserts new row into database or update existing row in database.
+     * @return bool 
+     */
+    public function save() {
+        if (!empty($this->id)) {
+            return $this->model->up($this);
+        } else {
+            return $this->model->put($this);
+        }
+    }
+    
+    /**
+     * Updates the values of the currently loaded row to new values, but does 
+     * not save the modifications.
+     * @param array $data 
+     */
+    public function update(array $data) {
+        foreach ($data as $key => $value) {
+            if ($key == 'model' || $key == 'modelName')
+                continue;
+            foreach ($this->model->hasOne as $local => $info) {
+                if (strpos($local, $key . '_') !== false) {
+                    $field = getValue($info, 'field', compat_strstr($local, '_', true));
+                    $model = getValue($info, 'model', ucfirst(Inflect::pluralize($field) . 'Model'));
+
+                    $reflexModel = new ReflectionClass($model);
+                    $value = $reflexModel->newInstance()->getByID((int) $value);
+                }
+            }
+            if (isset($this->{$key}))
+                $this->{$key} = $value;
+        }
+    }
+
+    /**
+     * Deletes current row from database.
+     * @return bool 
+     */
+    public function delete() {
+        return $this->model->delete($this);
+    }
+
+    /**
      * Loads the model.
      */
     public function loadModel() {
@@ -438,17 +498,17 @@ abstract class RowObject {
             }
             unset($this->relationTemp);
         }
-/* TODO: FIXME!
-        foreach ($this->model->hasMany as $name => $info) {
-            $model = ucfirst(Inflect::pluralize($name)) . 'Model';
-            $field_name = getValue($info, 'name', Inflect::singularize($name));
-            $foreign_field = getValue($info, 'field', Inflect::singularize($name) . '_' . $this->model->primaryKey);
-            $reflexModel = new ReflectionClass($model);
-            $modelInst = $reflexModel->newInstance();
-            $responce = $modelInst->getAll(null, null, $foreign_field . ' = ?', array($this->{$this->model->primaryKey}));
-            while ($row = $responce->fetchObject($modelInst->getClass()))
-                $this->{strtolower($field_name)}[] = $row;
-        }*/
+        /* TODO: FIXME!
+          foreach ($this->model->hasMany as $name => $info) {
+          $model = ucfirst(Inflect::pluralize($name)) . 'Model';
+          $field_name = getValue($info, 'name', Inflect::singularize($name));
+          $foreign_field = getValue($info, 'field', Inflect::singularize($name) . '_' . $this->model->primaryKey);
+          $reflexModel = new ReflectionClass($model);
+          $modelInst = $reflexModel->newInstance();
+          $responce = $modelInst->getAll(null, null, $foreign_field . ' = ?', array($this->{$this->model->primaryKey}));
+          while ($row = $responce->fetchObject($modelInst->getClass()))
+          $this->{strtolower($field_name)}[] = $row;
+          } */
     }
 
     public function __set($name, $value) {

@@ -14,6 +14,7 @@ spl_autoload_register(array('Autoload', 'loadDataSource'));
 spl_autoload_register(array('Autoload', 'loadCore'));
 spl_autoload_register(array('Autoload', 'loadLib'));
 spl_autoload_register(array('Autoload', 'loadObject'));
+spl_autoload_register(array('Autoload', 'loadAppLib'));
 spl_autoload_register(array('Autoload', 'loadApp'));
 
 /**
@@ -41,6 +42,15 @@ class Autoload {
             return true;
         }
         return false;
+    }
+
+    /**
+     * Loads a custom lib file in the app directory
+     * @param string $name Name of the file or class.
+     * @return bool 
+     */
+    public static function loadAppLib($name) {
+        return self::loadApp('lib' . DS . $name);
     }
 
     /**
@@ -115,7 +125,7 @@ class Autoload {
      */
     public static function loadHelper($name) {
         if (strpos($name, 'Helper') !== false) {
-            self::loadLib('Helper' . DS . ucfirst(compat_strstr($name, 'Helper', true)));
+            self::loadLib('Helpers' . DS . ucfirst(compat_strstr($name, 'Helper', true)));
         }
         return false;
     }

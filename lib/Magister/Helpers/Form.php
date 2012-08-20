@@ -16,6 +16,8 @@ class FormHelper {
      * @return string 
      */
     public static function selectFromModel(Model $model, array $options = array(), $field = 'name') {
+        if (!isset($options['name']))
+            $options['name'] = strtolower(Inflect::singularize(substr(get_class($model), 0, -5)));
         $query = $model->getAll(null);
         $items = array();
         while ($row = $query->fetchObject($model->getClass()))

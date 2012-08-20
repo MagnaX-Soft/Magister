@@ -58,11 +58,12 @@ function redirect($location) {
  * @param array $param The array to check.
  * @param array $array An array of required fields.
  * @return bool 
+ * @throws InvalidArgumentException
  */
 function set_filled(array $param, array $array) {
     foreach ($array as $field) {
         if (!isset($param[$field]) || empty($param[$field]))
-            return false;
+            throw new InvalidArgumentException('Required field ' . $field . ' was not defined in given array');
     }
     return true;
 }
@@ -142,8 +143,10 @@ function getValue(array $array, $key, $default = '') {
  * @param string $http HTTP error string
  */
 function displayError($message, $title = 'Server Error', $http = '500 Internal Server Error') {
-    header('HTTP/1.1 ' . $http);
-    header('Content-type: text/html; charset=utf-8');
+    if (!headers_sent()) {
+        header('HTTP/1.1 ' . $http);
+        header('Content-type: text/html; charset=utf-8');
+    }
     ?>
     <!DOCTYPE html>
     <html>

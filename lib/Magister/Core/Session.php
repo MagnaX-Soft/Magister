@@ -18,7 +18,7 @@ class Session {
      * Returns login status.
      * @return bool 
      */
-    public static function isUser() {
+    public static function isLogin() {
         if (isset($_SESSION['login']) && $_SESSION['login'] == true) {
             return true;
         }
@@ -32,9 +32,6 @@ class Session {
         global $sessionConfig;
         session_name($sessionConfig['name']);
         session_start();
-        if (!isset($_SESSION['user'])) {
-            $_SESSION['login'] = false;
-        }
     }
 
     /**

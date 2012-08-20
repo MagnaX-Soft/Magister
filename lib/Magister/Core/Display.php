@@ -43,12 +43,14 @@ class Display {
      * @return string 
      */
     static function footer($extra = '') {
+        global $debugMode;
         return '            <div id="footer" class="span-24 last">
                 <p class="small right text-right">
                     Powered by Magister
                 </p>
             </div>
         </div>
+        ' . (($debugMode) ? Debug::display() : '') . '
         ' . $extra . '
     </body>
 </html>';
