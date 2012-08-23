@@ -1,28 +1,34 @@
 <?php
 
 /**
- * Entrypoint if there is no mod_rewrite and the document root cannot be set to 
- * the application directory.
+ * Website entrypoint
  * @package App
  */
-
 if (!defined('DS'))
 /**
  * Shortname for the directory separator.
  */
     define('DS', DIRECTORY_SEPARATOR);
 
+
 if (!defined('ROOT'))
 /**
  * The path to the root of the package. 
  */
-    define('ROOT', dirname(dirname(__FILE__)));
+    define('ROOT', dirname(dirname(dirname(__FILE__))));
+
+if (!defined('LIB_DIR'))
+/**
+ * The path to the root of the library.
+ * Change it only if you have moved the library to another location.
+ */
+    define('LIB_DIR', ROOT . DS . 'lib');
 
 if (!defined('APP'))
 /**
  * The name of the current app.
  */
-    define('APP', basename(dirname(__FILE__)));
+    define('APP', basename(dirname(dirname(__FILE__))));
 
 if (!defined('APP_DIR'))
 /**
@@ -36,4 +42,9 @@ if (!defined('WEB_DIR'))
  */
     define('WEB_DIR', APP_DIR . DS . 'Web');
 
-require_once WEB_DIR . DS . 'index.php';
+require_once LIB_DIR . DS . 'Magister' . DS . 'Core' . DS . 'Autoload.php';
+Autoload::loadApp('config');
+Autoload::loadLib('Functions');
+Autoload::loadApp('routes');
+
+run();

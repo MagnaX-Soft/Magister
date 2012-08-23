@@ -20,7 +20,7 @@ if (!defined('ROOT'))
 
 if (!defined('APP'))
 /**
- * The name of the current app.
+ * The name of the current app. Defaults to `app`.
  */
     define('APP', 'app');
 
@@ -30,11 +30,10 @@ if (!defined('APP_DIR'))
  */
     define('APP_DIR', ROOT . DS . APP);
 
-if (!defined('LIB_DIR'))
+if (!defined('WEB_DIR'))
 /**
- * The path to the root of the library.
- * Change it only if you have moved the library to another location.
+ * The path to the root of the web accessible directory.
  */
-    define('LIB_DIR', ROOT . DS . 'lib');
+    define('WEB_DIR', APP_DIR . DS . 'Web');
 
-require_once APP_DIR . DS . 'index.php';
+require_once WEB_DIR . DS . 'index.php';

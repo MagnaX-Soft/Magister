@@ -1,0 +1,14 @@
+source:
+	lib
+
+destination:
+	docs
+
+charset: utf8
+title: Magister API Documentation
+#base-url: /docs
+autocomplete: "classes,constants,functions,methods,properties,classconstants"
+accessLevels: "public,protected,private"
+todo: yes
+report: docs/comments.cs
+php: no
