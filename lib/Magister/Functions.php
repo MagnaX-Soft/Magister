@@ -8,7 +8,10 @@ set_error_handler('errorToExceptionHandler');
 register_shutdown_function('fatalErrorShutdownHandler');
 
 /**
+ * ErrorToExceptionHandler function.
+ * 
  * Transforms regular PHP errors into exceptions.
+ * 
  * @param int $errno The error number.
  * @param string $errstr The error message.
  * @param string $errfile The offending file.
@@ -20,6 +23,8 @@ function errorToExceptionHandler($errno, $errstr, $errfile, $errline) {
 }
 
 /**
+ * FatalErrorShutdownHandler function.
+ * 
  * Processes shutdowns to display the custom error messages if the shutdown was 
  * triggered by a fatal error. 
  */
@@ -33,7 +38,10 @@ function fatalErrorShutdownHandler() {
 }
 
 /**
+ * CreateHash function.
+ * 
  * Hashes input string using md5 and sha1 algorithms.
+ * 
  * @global string $passwordHash
  * @param string $string The clear-text password.
  * @return string The hashed password.
@@ -44,7 +52,10 @@ function createHash($string) {
 }
 
 /**
- * Redirects the client to the $location.
+ * Redirect function.
+ * 
+ * Redirects the client to the specified location.
+ * 
  * @param string $location The redirect location.
  */
 function redirect($location) {
@@ -53,14 +64,18 @@ function redirect($location) {
 }
 
 /**
+ * SetFilled function.
+ * 
  * Returns true if all the keys specified in $array are set and not empty in the
- * $param array.
+ * $param array. Throws an InvalidArgumentException if a required key is not set 
+ * in $param.
+ * 
  * @param array $param The array to check.
  * @param array $array An array of required fields.
  * @return bool 
  * @throws InvalidArgumentException
  */
-function set_filled(array $param, array $array) {
+function setFilled(array $param, array $array) {
     foreach ($array as $field) {
         if (!isset($param[$field]) || empty($param[$field]))
             throw new InvalidArgumentException('Required field ' . $field . ' was not defined in given array');
@@ -69,6 +84,8 @@ function set_filled(array $param, array $array) {
 }
 
 /**
+ * Run functions.
+ * 
  * Processes the current request and dispatches the correct action.
  */
 function run() {
@@ -101,6 +118,8 @@ function run() {
 }
 
 /**
+ * Compat_strstr function.
+ * 
  * Implements PHP 5.3's version of strstr for compability with earlier versions.
  * 
  * @param string $haystack The input string.
@@ -125,7 +144,10 @@ function compat_strstr($haystack, $needle, $before_needle = false) {
 }
 
 /**
+ * GetValue function.
+ * 
  * Returns the value of the specified key or default is the key is not defined.
+ * 
  * @param array $array The array to search.
  * @param string|int $key The key to retrieve.
  * @param mixed $default The default value of the key.
@@ -137,7 +159,11 @@ function getValue(array $array, $key, $default = '') {
 }
 
 /**
+ * DisplayError function.
+ * 
  * Basic error functionality. 
+ * 
+ * @todo move this to the display class.
  * @param string $message error message
  * @param string $title title of the error page
  * @param string $http HTTP error string
