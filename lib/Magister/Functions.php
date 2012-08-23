@@ -109,10 +109,10 @@ function run() {
         $instance->{$target['action']}();
     } catch (RoutingException $e) {
         ob_clean();
-        displayError('The requested URL was not found. Please <a href="javascript:history.go(-1)">go back</a>.<pre>' . $e->getMessage() . '</pre>', 'Page Not Found', '404 Not Found');
+        Display::error('The requested URL was not found. Please <a href="javascript:history.go(-1)">go back</a>.<pre>' . $e->getMessage() . '</pre>', 'Page Not Found', '404 Not Found');
     } catch (Exception $e) {
         ob_clean();
-        displayError($e->getMessage() . ' in ' . $e->getFile() . ' on line ' . $e->getLine() . '.');
+        Display::error($e->getMessage() . ' in ' . $e->getFile() . ' on line ' . $e->getLine() . '.');
     }
     ob_end_flush();
 }
@@ -156,47 +156,4 @@ function compat_strstr($haystack, $needle, $before_needle = false) {
  */
 function getValue(array $array, $key, $default = '') {
     return (isset($array[$key])) ? $array[$key] : $default;
-}
-
-/**
- * DisplayError function.
- * 
- * Basic error functionality. 
- * 
- * @todo move this to the display class.
- * @param string $message error message
- * @param string $title title of the error page
- * @param string $http HTTP error string
- */
-function displayError($message, $title = 'Server Error', $http = '500 Internal Server Error') {
-    if (!headers_sent()) {
-        header('HTTP/1.1 ' . $http);
-        header('Content-type: text/html; charset=utf-8');
-    }
-    ?>
-    <!DOCTYPE html>
-    <html>
-        <head>
-            <title>Error</title>
-            <style type="text/css"><?php echo file_get_contents(APP_DIR . DS . 'assets' . DS . 'css' . DS . 'screen.css'); ?></style>
-        </head>
-        <body>
-            <div class="container">
-                <div class="span-24 last append-bottom prepend-top" id="header">
-                    <div class="span-24 last" id="title">
-                        <h1><?php echo $title; ?></h1>
-                    </div>
-                    <div class="span-24 last">
-                        <div class="error">
-                            <strong>
-                                <p><?php echo $message; ?></p>
-                            </strong>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </body>
-    </html>
-    <?php
-    exit(1);
 }

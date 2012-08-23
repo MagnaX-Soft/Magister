@@ -1,7 +1,10 @@
 <?php
 
 /**
+ * Display class.
+ * 
  * Handles view related functions.
+ * 
  * @todo Move this to templates
  * @package Magister
  * @subpackage View
@@ -9,11 +12,14 @@
 class Display {
 
     /**
+     * Header method.
+     * 
      * Returns the HTTP status code, MIME type, charset and header HTML.
+     * 
      * @param string $title
      * @return string
      */
-    static function header($title) {
+    public static function header($title) {
         header('HTTP/1.1 200 OK');
         header('Content-type: text/html; charset=utf-8');
         return '<!DOCTYPE html>
@@ -38,11 +44,14 @@ class Display {
     }
 
     /**
+     * Footer method.
+     * 
      * Returns the HTML of the page footer.
+     * 
      * @param string $extra
      * @return string 
      */
-    static function footer($extra = '') {
+    public static function footer($extra = '') {
         global $debugMode;
         return '            <div id="footer" class="span-24 last">
                 <p class="small right text-right">
@@ -54,6 +63,49 @@ class Display {
         ' . $extra . '
     </body>
 </html>';
+    }
+
+    /**
+     * Error method.
+     * 
+     * Outputs error message to the browser.
+     * 
+     * @todo move this to the display class.
+     * @param string $message error message
+     * @param string $title title of the error page
+     * @param string $http HTTP error string
+     */
+    public static function error($message, $title = 'Server Error', $http = '500 Internal Server Error') {
+        if (!headers_sent()) {
+            header('HTTP/1.1 ' . $http);
+            header('Content-type: text/html; charset=utf-8');
+        }
+        ?>
+        <!DOCTYPE html>
+        <html>
+            <head>
+                <title>Error</title>
+                <style type="text/css"><?php echo file_get_contents(APP_DIR . DS . 'assets' . DS . 'css' . DS . 'screen.css'); ?></style>
+            </head>
+            <body>
+                <div class="container">
+                    <div class="span-24 last append-bottom prepend-top" id="header">
+                        <div class="span-24 last" id="title">
+                            <h1><?php echo $title; ?></h1>
+                        </div>
+                        <div class="span-24 last">
+                            <div class="error">
+                                <strong>
+                                    <p><?php echo $message; ?></p>
+                                </strong>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </body>
+        </html>
+        <?php
+        exit(1);
     }
 
 }
