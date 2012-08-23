@@ -353,10 +353,13 @@ class Route {
      * @return string 
      */
     private function substituteFilter($matches) {
-        if (isset($matches[1]) && isset($this->filters[$matches[1]])) {
+        var_dump($matches);
+        if (isset($matches[1]) && isset($this->filters[$matches[1]]))
             return $this->filters[$matches[1]];
-        }
-        return "([\w-]+)";
+        elseif (isset($matches[1]) && $matches[1] == 'id')
+            return '([\d]+)';
+        else
+            return "([\w-]+)";
     }
 
     /**

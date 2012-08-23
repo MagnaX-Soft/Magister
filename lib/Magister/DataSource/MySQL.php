@@ -4,6 +4,9 @@
  * MySQLDataSource class.
  * 
  * Provides data from a MySQL database.
+ * 
+ * @package Magister
+ * @subpackage DB
  */
 class MySQLDataSource extends DataSource {
     

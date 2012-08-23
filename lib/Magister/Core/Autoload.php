@@ -99,6 +99,7 @@ class Autoload {
      */
     public static function loadLib($name, $ext = '.php') {
         $common = LIB_DIR . DS . 'Magister' . DS . $name . $ext;
+        var_dump($common);
         if (file_exists($common)) {
             require_once $common;
             return true;
@@ -169,14 +170,17 @@ class Autoload {
  * goes through the loaders that check for the name, no matter where their 
  * location, then go through the application-specific loaders, than the library 
  * loaders.
+ * 
+ * `loadObject` must always come after `loadLib`, due to it's use of the Inflect
+ * class.
  */
 spl_autoload_register(array('Autoload', 'loadException'));
 spl_autoload_register(array('Autoload', 'loadController'));
 spl_autoload_register(array('Autoload', 'loadModel'));
 spl_autoload_register(array('Autoload', 'loadHelper'));
 spl_autoload_register(array('Autoload', 'loadDataSource'));
-spl_autoload_register(array('Autoload', 'loadObject'));
 spl_autoload_register(array('Autoload', 'loadAppLib'));
 spl_autoload_register(array('Autoload', 'loadApp'));
 spl_autoload_register(array('Autoload', 'loadCore'));
 spl_autoload_register(array('Autoload', 'loadLib'));
+spl_autoload_register(array('Autoload', 'loadObject'));
