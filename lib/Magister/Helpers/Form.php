@@ -1,15 +1,21 @@
 <?php
 
 /**
+ * FormHelper class.
+ * 
  * Helps with forms.
+ * 
  * @package Magister
  * @subpackage Helpers 
  */
 class FormHelper {
 
     /**
+     * SelectFromModel method.
+     * 
      * Generates a select form field using all the rows from a model. See 
      * {@see FormHelper::selectFromArray()} for the option list.
+     * 
      * @param Model $model
      * @param array $options
      * @param string $field
@@ -26,11 +32,14 @@ class FormHelper {
     }
 
     /**
+     * SelectFromArray method.
+     * 
      * Generate a select form field from an array. Optional options are:
-     *  * height (int) height of the field
-     *  * multiple (bool) allow multiple selections
-     *  * name (string) name of the field
-     *  * selected (array) array of selected values
+     * - height (int) height of the field
+     * - multiple (bool) allow multiple selections
+     * - name (string) name of the field
+     * - selected (array) array of selected values
+     * 
      * @param array $items
      * @param array $options 
      * @return string

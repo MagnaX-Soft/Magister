@@ -1,14 +1,20 @@
 <?php
 
 /**
+ * UrlHelper class.
+ * 
  * Helps with URL generation.
+ * 
  * @package Magister
  * @subpackage Helpers 
  */
 class UrlHelper {
 
     /**
+     * Link method.
+     * 
      * Returns the url prefixed by the basePath.
+     * 
      * @param string $url
      * @return string 
      */
@@ -17,7 +23,10 @@ class UrlHelper {
     }
 
     /**
+     * Asset method.
+     * 
      * Returns the URL to an asset.
+     * 
      * @uses urlHelper()
      * @param string $type
      * @param string $name
@@ -28,7 +37,10 @@ class UrlHelper {
     }
 
     /**
+     * Route method.
+     * 
      * Generates and returns the URL for a named route.
+     * 
      * @param string $route
      * @param array $params
      * @return string 
@@ -38,7 +50,10 @@ class UrlHelper {
     }
 
     /**
+     * Query method.
+     * 
      * Builds a query string from the supplied array
+     * 
      * @param array $query
      * @return string 
      */

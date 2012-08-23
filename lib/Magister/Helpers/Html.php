@@ -1,14 +1,20 @@
 <?php
 
 /**
+ * HtmlHelper class.
+ * 
  * Helps with html generation.
+ * 
  * @package Magister
  * @subpackage Helpers 
  */
 class HtmlHelper {
 
     /**
+     * IncludeJS method.
+     * 
      * Returns HTML code to include a Javascript script.
+     * 
      * @param string $name name of the script
      * @return string 
      */
@@ -17,7 +23,10 @@ class HtmlHelper {
     }
 
     /**
+     * IncludeCSS method.
+     * 
      * Returns HTML code to include a CSS stylesheet.
+     * 
      * @param string $name name of the stylesheet
      * @param string $media
      * @return string 
@@ -27,16 +36,19 @@ class HtmlHelper {
     }
 
     /**
+     * Paginate method.
+     * 
      * Given the current page number and the last page number, generates 
      * pagination links and returns them. If $limit is given, it generates a 
      * field to set a custom
+     * 
      * @param int $page
      * @param int $last
      * @param int $limit
      * @param array $query
      * @return string 
      */
-    static function paginate($page, $last, $limit = null, array $query = array()) {
+    public static function paginate($page, $last, $limit = null, array $query = array()) {
         if ($last <= 1)
             return '';
         
