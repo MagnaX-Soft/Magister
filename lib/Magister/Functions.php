@@ -4,6 +4,10 @@
  * @package Magister 
  * @subpackage Core
  */
+
+/**
+ * Error handlers.
+ */
 set_error_handler('errorToExceptionHandler');
 register_shutdown_function('fatalErrorShutdownHandler');
 
@@ -33,7 +37,7 @@ function fatalErrorShutdownHandler() {
     if ($last_error['type'] === E_ERROR) {
         // fatal error
         ob_clean();
-        displayError($last_error['message'] . ' in ' . $last_error['file'] . ' on line ' . $last_error['line'] . '.');
+        Display::error($last_error['message'] . ' in ' . $last_error['file'] . ' on line ' . $last_error['line'] . '.');
     }
 }
 
