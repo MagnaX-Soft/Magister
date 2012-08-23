@@ -24,7 +24,7 @@ class Session {
      * 
      * Logs the current user out.
      */
-    public static function login() {
+    public static function logout() {
         $_SESSION['login'] = false;
     }
 
