@@ -1,18 +1,30 @@
 <?php
 
+/**
+ * Debug class.
+ * 
+ * Generates dumps of functions.
+ * 
+ * @package Magister
+ * @subpackage Debug
+ */
 class Debug {
     
     /**
-     * Debug data to be displayed after the footer.
+     * Array holding the debug data.
+     * 
      * @var array 
      */
     private static $data;
     
     /**
-     * Adds the value of var_dump to the data array.
-     * @param mixed $arg1 
-     * @param mixed ...
+     * Dump method.
+     * 
+     * Adds the value of var_dump to the data array. Accepts an arbitrary number 
+     * of arguments.
+     * 
      * @param mixed $argn
+     * @throws InvalidArgumentException
      */
     public static function dump() {
         if (func_num_args() < 1)
@@ -26,7 +38,10 @@ class Debug {
     }
     
     /**
-     * Adds the query list.
+     * Queries method.
+     * 
+     * Adds the query list to the debug dump.
+     * 
      * @param Model $model 
      */
     public static function queries(Model $model) {
@@ -34,7 +49,10 @@ class Debug {
     }
     
     /**
+     * Display method.
+     * 
      * Returns HTML formatted debug information.
+     * 
      * @return string
      */
     public static function display() {
