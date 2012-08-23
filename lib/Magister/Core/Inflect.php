@@ -1,8 +1,11 @@
 <?php
 
 /**
+ * Inflect class.
+ * 
  * Inflect class enables pluralization and singularization of most english 
  * nouns.
+ * 
  * @license MIT 
  * @author Sho Kuwamoto http://kuwamoto.org/2007/12/17/improved-pluralizing-in-php-actionscript-and-ror/
  * @package Magister
@@ -12,6 +15,7 @@ class Inflect {
 
     /**
      * Regexes to pluralize.
+     * 
      * @var array 
      */
     static $plural = array(
@@ -38,6 +42,7 @@ class Inflect {
 
     /**
      * Regexes to singularize.
+     * 
      * @var array
      */
     static $singular = array(
@@ -73,6 +78,7 @@ class Inflect {
 
     /**
      * Irregular plurals.
+     * 
      * @var array 
      */
     static $irregular = array(
@@ -88,6 +94,7 @@ class Inflect {
 
     /**
      * Uncountable nouns.
+     * 
      * @var array 
      */
     static $uncountable = array(
@@ -104,7 +111,10 @@ class Inflect {
     );
 
     /**
+     * Pluzalize method.
+     * 
      * Pluralizes the given string.
+     * 
      * @param string $string String to pluralize.
      * @return string 
      */
@@ -130,7 +140,10 @@ class Inflect {
     }
 
     /**
+     * Singularize method.
+     * 
      * Singularizes the given string.
+     * 
      * @param string $string String to singularize.
      * @return string 
      */
@@ -156,8 +169,11 @@ class Inflect {
     }
 
     /**
+     * PluralizeCount method.
+     * 
      * Pluralizes following the english grammar rules: if 0 or more than 1 
      * items, pluralize. If not, keep the singular form.
+     * 
      * @param int $count Number of items.
      * @param string $string String to adjust.
      * @return string The adjusted string.
