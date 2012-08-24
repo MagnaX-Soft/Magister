@@ -1,51 +1,56 @@
 <?php
 
 /**
- * Routing class to match request URL's against given routes and map them to a controller action.
- * @package PHP-Router
+ * Router class.
+ * 
+ * Routing class to match request URL's against given routes and map them to a 
+ * controller action.
+ * 
+ * @package Magister
+ * @subpackage PHP-Router
  */
 class Router {
 
     /**
-     * Array that holds all Route objects
+     * Array that holds all Route objects.
+     * 
      * @var array
      */
     private $routes = array();
 
     /**
-     * Array to store named routes in, used for reverse routing.
-     * @var array 
-     */
-    private $namedRoutes = array();
-
-    /**
-     * The base REQUEST_URI. Gets prepended to all route url's.
+     * The base url.
+     * 
      * @var string
      */
     private $basePath = '';
 
     /**
-     * The instance of the class
+     * The instance of the class.
+     * 
      * @var Router
      */
     private static $instance;
 
     /**
-     * Class constructor
+     * Router constructor.
      */
     private function __construct() {
         
     }
 
     /**
-     * Clone magic function 
+     * Clone magic function.
      */
     private function __clone() {
         
     }
 
     /**
+     * GetInstance method.
+     * 
      * Returns current instance of the Router object
+     * 
      * @return Router 
      */
     public static function getInstance() {
@@ -56,7 +61,10 @@ class Router {
     }
 
     /**
-     * Set the base url - gets prepended to all route url's.
+     * SetBasePath method.
+     * 
+     * Sets the base url that will get prepended to all route urls.
+     * 
      * @param string $basePath
      */
     public function setBasePath($basePath) {
@@ -64,7 +72,21 @@ class Router {
     }
 
     /**
+     * GetBasePath method.
+     * 
+     * Returns the base url.
+     * 
+     * @return string
+     */
+    public function getBasePath() {
+        return $this->basePath;
+    }
+
+    /**
+     * PrefixURL method.
+     * 
      * Prefixes url by the Router::$basePath.
+     * 
      * @param string $url
      * @return string 
      */
@@ -77,25 +99,22 @@ class Router {
      * 
      * Registers a route matching the given URL. The optionals arguments are:
      * 
-     * `target`: an array specifying the controller and action.
-     * 
-     * `methods`: the HTTP methods allowed by the route. Defaults to `GET`.
-     * 
-     * `filters`: custom regexes matching named parameters in the URL. Named 
+     * - `target`: an array specifying the controller and action.
+     * - `methods`: the HTTP methods allowed by the route. Defaults to `GET`.
+     * - `filters`: custom regexes matching named parameters in the URL. Named 
      * parameters with no matching filter will default to `([\w-]+)`.
-     * 
-     * `params`: pre-set the value of the route's parameters.
-     * 
-     * `name`: the name of the route. REQUIRED.
+     * - `params`: pre-set the value of the route's parameters.
+     * - `name`: the name of the route. REQUIRED.
      * 
      * The magic named parameters `:controller` and `:action` will set the route's 
      * target to their value, regardless of the previous target value.
+     * 
      * @param string $routeUrl string
      * @param array $args Array of optional arguments.
      */
     public function map($routeUrl, array $args = array()) {
         $route = new Route();
-        $route->setUrl($this->basePath . $routeUrl);
+        $route->setUrl($routeUrl);
 
         if (isset($args['target']))
             $route->setTarget($args['target']);
@@ -111,12 +130,6 @@ class Router {
         if (isset($args['params']))
             $route->setParameters($args['params']);
 
-        if (isset($args['name'])) {
-            $route->setName($args['name']);
-            if (!isset($this->namedRoutes[$route->getName()])) {
-                $this->namedRoutes[$route->getName()] = $route;
-            }
-        }
         $this->routes[] = $route;
     }
 
@@ -126,7 +139,7 @@ class Router {
     public function matchCurrentRequest() {
         $requestMethod = (isset($_POST['_method']) && ($_method = strtoupper($_POST['_method'])) && in_array($_method, array('PUT', 'DELETE'))) ? $_method : $_SERVER['REQUEST_METHOD'];
         $requestUrl = $_SERVER['REQUEST_URI'];
-        
+
         // strip GET variables from URL
         if (($pos = strpos($requestUrl, '?')) !== false) {
             $requestUrl = substr($requestUrl, 0, $pos);
@@ -145,18 +158,21 @@ class Router {
      * @throws RoutingException 
      */
     public function match($requestUrl, $requestMethod = 'GET') {
+        $cleanUrl = str_replace($this->getBasePath(), '', $requestUrl);
         foreach ($this->routes as $route) {
             // compare server request method with route's allowed http methods
             if (!in_array($requestMethod, $route->getMethods()))
                 continue;
 
             // check if request url matches route regex. if not, return false.
-            if (!preg_match("@^" . $route->getRegex() . "*$@i", $requestUrl, $matches))
+            if (!preg_match("@^" . $route->getRegex() . "*$@i", $cleanUrl, $matches))
                 continue;
 
-            $params = $route->getParameters();
+            $newRoute = clone $route;
 
-            if (preg_match_all("/:([\w-]+)/", $route->getUrl(), $argument_keys)) {
+            $params = $newRoute->getParameters();
+
+            if (preg_match_all("@:([\w-]+)@", $newRoute->getUrl(), $argument_keys)) {
                 // grab array with matches
                 $argument_keys = $argument_keys[1];
 
@@ -167,54 +183,73 @@ class Router {
                 }
             }
 
-            $target = $route->getTarget();
+            $target = $newRoute->getTarget();
             if (isset($params['controller'])) {
-                $target['controller'] = $params['controller'];
+                $target['controller'] = ucfirst(strtolower($params['controller']));
                 unset($params['controller']);
             }
             if (isset($params['action'])) {
                 $target['action'] = $params['action'];
                 unset($params['action']);
             }
-            $route->setTarget($target);
-            
+            $newRoute->setTarget($target);
+
             $params['requestMethod'] = $requestMethod;
             $params['requestURL'] = $requestUrl;
-            $route->setParameters($params);
-            return $route;
+            $params['cleanURL'] = $cleanUrl;
+            $newRoute->setParameters($params);
+            return $newRoute;
         }
         throw new RoutingException("No route matching $requestMethod $requestUrl has been found.");
     }
 
     /**
-     * Reverse route a named route.
+     * URL generation method.
      * 
-     * @param string $routeName The name of the route to reverse route.
+     * Generates a URL from the given target.
+     * 
+     * @param array $target The target to generate.
      * @param array $params Optional array of parameters to use in URL
      * @return string The url to the route
      * @throws UrlException 
      */
-    public function generate($routeName, array $params = array()) {
-        // Check if route exists
-        if (!isset($this->namedRoutes[$routeName]))
-            throw new UrlException("No route with the name $routeName has been found.");
+    public function generate(array $target, array $params = array()) {
+        // Check that controller is complete
+        if (!isset($target['controller']))
+            throw new UrlException('Incomplete target was given for route generation.');
 
-        $route = $this->namedRoutes[$routeName];
-        $url = $route->getUrl();
+        if (!isset($target['action']))
+            $target['action'] = 'index';
 
-        $param_keys = array();
+        foreach ($this->routes as $route) {
+            if (!$route->matchTarget($target, $params))
+                continue;
 
-        // replace route url with given parameters
-        if ($params && preg_match_all("/:(\w+)/", $url, $param_keys)) {
-            // grab array with matches
-            $param_keys = $param_keys[1];
-            // loop trough parameter names, store matching value in $params array
-            foreach ($param_keys as $i => $key) {
-                if (isset($params[$key]))
-                    $url = preg_replace("/:(\w+)/", $params[$key], $url, 1);
+            $url = $route->getUrl();
+            $param_keys = array();
+
+            // replace route url with given parameters
+            if ($params && preg_match_all("@:(\w+)@", $url, $param_keys)) {
+                // grab array with matches
+                $param_keys = $param_keys[1];
+                var_dump($param_keys);
+                // loop trough parameter names, store matching value in $params array
+                foreach ($param_keys as $i => $key) {
+                    switch($key) {
+                        case 'controller':
+                        case 'action':
+                            $url = str_replace(':' . $key, $target[$key], $url);
+                            break;
+                        default:
+                            $url = str_replace(':' . $key, $params[$key], $url);
+                            break;
+                    }
+                }
             }
+            return $url;
         }
-        return $url;
+
+        throw new UrlException("No route matching {$target['controller']}#{$target['action']}(" . urldecode(http_build_query($params)) . ") has been found.");
     }
 
 }
@@ -232,6 +267,12 @@ class Route {
     private $url;
 
     /**
+     * Regex of this Route.
+     * @var string
+     */
+    private $regex;
+
+    /**
      * Accepted HTTP methods for this route
      * @var array
      */
@@ -239,9 +280,9 @@ class Route {
 
     /**
      * Target for this route, can be anything.
-     * @var mixed
+     * @var array
      */
-    private $target;
+    private $target = array('controller' => null, 'action' => null);
 
     /**
      * The name of this route, used for reversed routing
@@ -256,7 +297,7 @@ class Route {
     private $filters = array();
 
     /**
-     * Array containing parameters passed through request URL
+     * Array containing parameters passed through request URL.
      * @var array
      */
     private $parameters = array();
@@ -297,6 +338,40 @@ class Route {
      */
     public function setTarget($target) {
         $this->target = $target;
+    }
+
+    /**
+     * MatcheTarget method.
+     * 
+     * Determines if the route matches the given target and parameter.
+     * 
+     * @param type $target
+     * @param array $params
+     * @return boolean
+     */
+    public function matchTarget($target, array $params = array()) {
+        $paramCount = substr_count($this->getUrl(), ':');
+
+        // Same controller, action and the given params count is equal to the 
+        // number of required parameters
+        // OR
+        // Controller and action are empty and the given params count is equal 
+        // to the number of required parameters
+        if (($this->target['controller'] == $target['controller']
+                && $this->target['action'] == $target['action']
+                && $paramCount == count($params))
+            || (empty($this->target['controller'])
+                && empty($this->target['action'])
+                && ($paramCount - 2) == count($params))) {
+            foreach ($params as $key => $value) {
+                // Making sure that the right parameters have been passed.
+                if (strpos($this->getUrl(), ':' . $key) === false)
+                    return false;
+            }
+            return true;
+        }
+
+        return false;
     }
 
     /**
@@ -344,7 +419,10 @@ class Route {
      * @return string 
      */
     public function getRegex() {
-        return preg_replace_callback("/:(\w+)/", array(&$this, 'substituteFilter'), $this->url);
+        if (empty($this->regex))
+            $this->regex = preg_replace_callback("@:(\w+)@", array(&$this, 'substituteFilter'), $this->url);
+
+        return $this->regex;
     }
 
     /**
@@ -353,13 +431,21 @@ class Route {
      * @return string 
      */
     private function substituteFilter($matches) {
-        var_dump($matches);
-        if (isset($matches[1]) && isset($this->filters[$matches[1]]))
+        if (isset($this->filters[$matches[1]]))
             return $this->filters[$matches[1]];
-        elseif (isset($matches[1]) && $matches[1] == 'id')
-            return '([\d]+)';
-        else
-            return "([\w-]+)";
+
+        switch ($matches[1]) {
+            case 'id':
+                return '([\d]+)';
+            case 'year':
+                return '([12][\d]{3})';
+            case 'month':
+                return '(0[\d]|1[012])';
+            case 'date':
+                return '(0?[\d]|[12][\d]|3[01])';
+            default:
+                return '([\w-]+)';
+        }
     }
 
     /**

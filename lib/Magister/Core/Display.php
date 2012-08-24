@@ -85,7 +85,7 @@ class Display {
         <html>
             <head>
                 <title>Error</title>
-                <style type="text/css"><?php echo file_get_contents(APP_DIR . DS . 'assets' . DS . 'css' . DS . 'screen.css'); ?></style>
+                <style type="text/css"><?php echo file_get_contents(WEB_DIR . DS . 'assets' . DS . 'css' . DS . 'screen.css'); ?></style>
             </head>
             <body>
                 <div class="container">

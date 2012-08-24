@@ -99,7 +99,6 @@ class Autoload {
      */
     public static function loadLib($name, $ext = '.php') {
         $common = LIB_DIR . DS . 'Magister' . DS . $name . $ext;
-        var_dump($common);
         if (file_exists($common)) {
             require_once $common;
             return true;
