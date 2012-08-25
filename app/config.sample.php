@@ -1,13 +1,11 @@
 <?php
-
 /**
- * Application configuration. Any configuration in config.php can be
+ * Application configuration. Any configuration in config.php can be overwritten
+ * by creating a config.local.php file.
+ * 
  * @package App
  * @subpackage Config 
  */
-date_default_timezone_set('America/Toronto');
-
-global $dbConfig, $routingConfig, $passwordHash, $compatibilityMode, $debugMode, $sessionConfig;
 
 /**
  * Database configuration.
@@ -59,5 +57,15 @@ $debugMode = true;
 $sessionConfig = array(
     'name' => 'Magister_App'
 );
+
+/**
+ * Sets the timezone.
+ */
+date_default_timezone_set('America/Toronto');
+
+/**
+ * Defines the configuration variables as global.
+ */
+global $dbConfig, $routingConfig, $passwordHash, $compatibilityMode, $debugMode, $sessionConfig;
 
 Autoload::loadApp('config.local');
