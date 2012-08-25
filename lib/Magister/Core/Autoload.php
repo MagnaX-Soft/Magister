@@ -84,7 +84,7 @@ class Autoload {
      */
     public static function loadObject($name) {
         if (!class_exists('RowObject'))
-            self::loadLib('Model');
+            self::loadCore('Model');
         return self::loadApp('Models' . DS . Inflect::pluralize($name) . 'Model');
     }
 

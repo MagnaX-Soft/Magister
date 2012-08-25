@@ -123,5 +123,22 @@ class HtmlHelper {
         }
         return $pagination;
     }
+    
+    public static function htmlFull($tag, $contents, array $params = array()) {
+        $string = '<' . $tag;
+        foreach ($params as $key => $value) {
+            if (is_int($key))
+                $string .= ' ' . $value;
+            else
+                $string .= ' ' . $key . '="' . $value . '"';
+        }
+        $string .= '>' . $contents . '</' . $tag . '>';
+        return $string;
+    }
+    
+    public static function a($href, $text = null, array $params = array()) {
+        $params['href'] = $href;
+        return self::htmlFull('a', (empty($text)) ? $href : $text, $params);
+    }
 
 }

@@ -33,6 +33,13 @@ class Router {
     private static $instance;
 
     /**
+     * The current matched route.
+     * 
+     * @var Route
+     */
+    public $currentRoute;
+
+    /**
      * Router constructor.
      */
     private function __construct() {
@@ -168,11 +175,11 @@ class Router {
             if (!preg_match("@^" . $route->getRegex() . "*$@i", $cleanUrl, $matches))
                 continue;
 
-            $newRoute = clone $route;
+            $this->currentRoute = clone $route;
 
-            $params = $newRoute->getParameters();
+            $params = $this->currentRoute->getParameters();
 
-            if (preg_match_all("@:([\w-]+)@", $newRoute->getUrl(), $argument_keys)) {
+            if (preg_match_all("@:([\w-]+)@", $this->currentRoute->getUrl(), $argument_keys)) {
                 // grab array with matches
                 $argument_keys = $argument_keys[1];
 
@@ -183,7 +190,7 @@ class Router {
                 }
             }
 
-            $target = $newRoute->getTarget();
+            $target = $this->currentRoute->getTarget();
             if (isset($params['controller'])) {
                 $target['controller'] = ucfirst(strtolower($params['controller']));
                 unset($params['controller']);
@@ -192,13 +199,13 @@ class Router {
                 $target['action'] = $params['action'];
                 unset($params['action']);
             }
-            $newRoute->setTarget($target);
+            $this->currentRoute->setTarget($target);
 
             $params['requestMethod'] = $requestMethod;
             $params['requestURL'] = $requestUrl;
             $params['cleanURL'] = $cleanUrl;
-            $newRoute->setParameters($params);
-            return $newRoute;
+            $this->currentRoute->setParameters($params);
+            return $this->currentRoute;
         }
         throw new RoutingException("No route matching $requestMethod $requestUrl has been found.");
     }
@@ -215,8 +222,16 @@ class Router {
      */
     public function generate(array $target, array $params = array()) {
         // Check that controller is complete
-        if (!isset($target['controller']))
-            throw new UrlException('Incomplete target was given for route generation.');
+        if (!isset($target['controller']) || empty($target['controller'])) {
+            if ($this->currentRoute instanceof Route) {
+                $currentTarget = $this->currentRoute->getTarget();
+                if (!empty($currentTarget['controller']))
+                    $target['controller'] = $currentTarget['controller'];
+                else
+                    throw new UrlException('Incomplete target was given for route generation.');
+            } else
+                throw new UrlException('Incomplete target was given for route generation.');
+        }
 
         if (!isset($target['action']))
             $target['action'] = 'index';
@@ -232,10 +247,9 @@ class Router {
             if ($params && preg_match_all("@:(\w+)@", $url, $param_keys)) {
                 // grab array with matches
                 $param_keys = $param_keys[1];
-                var_dump($param_keys);
                 // loop trough parameter names, store matching value in $params array
                 foreach ($param_keys as $i => $key) {
-                    switch($key) {
+                    switch ($key) {
                         case 'controller':
                         case 'action':
                             $url = str_replace(':' . $key, $target[$key], $url);
@@ -246,7 +260,7 @@ class Router {
                     }
                 }
             }
-            return $url;
+            return $this->prefixURL($url);
         }
 
         throw new UrlException("No route matching {$target['controller']}#{$target['action']}(" . urldecode(http_build_query($params)) . ") has been found.");
@@ -360,7 +374,7 @@ class Route {
         if (($this->target['controller'] == $target['controller']
                 && $this->target['action'] == $target['action']
                 && $paramCount == count($params))
-            || (empty($this->target['controller'])
+                || (empty($this->target['controller'])
                 && empty($this->target['action'])
                 && ($paramCount - 2) == count($params))) {
             foreach ($params as $key => $value) {

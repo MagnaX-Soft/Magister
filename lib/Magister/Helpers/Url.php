@@ -41,11 +41,11 @@ class UrlHelper {
      * 
      * Generates and returns the URL for a named route.
      * 
-     * @param string $route
+     * @param array $route
      * @param array $params
      * @return string 
      */
-    public static function route($route, array $params = array()) {
+    public static function route(array $route, array $params = array()) {
         return Router::getInstance()->generate($route, $params);
     }
 

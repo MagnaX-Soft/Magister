@@ -120,9 +120,10 @@ abstract class Model implements Serializable {
      */
     public function getTable() {
         global $dbConfig;
-        $table = (empty($this->table)) ? strtolower(substr(get_class(), 0, -5)) : $this->table;
+        if (empty($this->table))
+            $this->table = strtolower(substr(get_class($this), 0, -5));
 
-        return (!empty($dbConfig['prefix'])) ? $dbConfig['prefix'] . '_' . $table : $table;
+        return (!empty($dbConfig['prefix'])) ? $dbConfig['prefix'] . '_' . $this->table : $this->table;
     }
 
     /**
@@ -133,7 +134,10 @@ abstract class Model implements Serializable {
      * @return string 
      */
     public function getClass() {
-        return (!empty($this->class)) ? ucfirst(Inflect::singularize(substr(get_class(), 0, -5))) : $this->class;
+        if (empty($this->class))
+            $this->class = ucfirst(Inflect::singularize(substr(get_class($this), 0, -5)));
+
+        return $this->class;
     }
 
     /**
