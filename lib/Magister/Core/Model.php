@@ -503,13 +503,19 @@ abstract class RowObject {
     protected $modelName;
 
     /**
+     * Holds the row's relations
+     * 
+     * @var array
+     */
+    protected $relation = array();
+
+    /**
      * RowObject constructor.
      * 
      * Instanciates the associated model.
      */
     public function __construct() {
         $this->loadModel();
-        $this->loadRelations();
     }
 
     /**
@@ -576,42 +582,17 @@ abstract class RowObject {
             $this->model = new $this->modelName;
     }
 
-    /**
-     * LoadRelations method.
-     * 
-     * Loads the foreign relations.
-     * 
-     * @todo make this lazy
-     */
-    public function loadRelations() {
-        if (isset($this->relationTemp) && array($this->relationTemp)) {
-            foreach ($this->relationTemp as $name => $value) {
-                list($foreign_name, $field) = explode('_', $name);
-                foreach ($this->model->hasOne as $key => $info) {
-                    $field = getValue($info, 'field', compat_strstr($key, '_', true));
-                    $name = getValue($info, 'name', ucfirst($field));
-                    $model = getValue($info, 'model', ucfirst(Inflect::pluralize($field) . 'Model'));
-
-                    if ($name == $foreign_name) {
-                        $reflexModel = new ReflectionClass($model);
-                        $this->{strtolower($name)} = $reflexModel->newInstance()->getByID($value);
-                    }
-                }
-            }
-            unset($this->relationTemp);
-        }
-        /* TODO: FIXME!
-          foreach ($this->model->hasMany as $name => $info) {
-          $model = ucfirst(Inflect::pluralize($name)) . 'Model';
-          $field_name = getValue($info, 'name', Inflect::singularize($name));
-          $foreign_field = getValue($info, 'field', Inflect::singularize($name) . '_' . $this->model->primaryKey);
-          $reflexModel = new ReflectionClass($model);
-          $modelInst = $reflexModel->newInstance();
-          $responce = $modelInst->getAll(null, null, $foreign_field . ' = ?', array($this->{$this->model->primaryKey}));
-          while ($row = $responce->fetchObject($modelInst->getClass()))
-          $this->{strtolower($field_name)}[] = $row;
-          } */
-    }
+    /* TODO: Implement hasMany relationships
+      foreach ($this->model->hasMany as $name => $info) {
+      $model = ucfirst(Inflect::pluralize($name)) . 'Model';
+      $field_name = getValue($info, 'name', Inflect::singularize($name));
+      $foreign_field = getValue($info, 'field', Inflect::singularize($name) . '_' . $this->model->primaryKey);
+      $reflexModel = new ReflectionClass($model);
+      $modelInst = $reflexModel->newInstance();
+      $responce = $modelInst->getAll(null, null, $foreign_field . ' = ?', array($this->{$this->model->primaryKey}));
+      while ($row = $responce->fetchObject($modelInst->getClass()))
+      $this->{strtolower($field_name)}[] = $row;
+      } */
 
     /**
      * Magic set method.
@@ -624,9 +605,33 @@ abstract class RowObject {
      */
     public function __set($name, $value) {
         if (strpos($name, '_'))
-            $this->relationTemp[$name] = $value;
+            $this->relation[$name] = $value;
         else
             $this->{$name} = $value;
+    }
+
+    /**
+     * Magic get method.
+     * 
+     * Lazily loads the current row's relation, as they are needed.
+     * 
+     * @param mixed $name
+     * @return RowObject
+     * @throws UnknownRelationException
+     */
+    public function __get($name) {
+        foreach ($this->relation as $link => $pk) {
+            list($foreign_name, $field) = explode('_', $link);
+            if ($foreign_name != ucfirst($name))
+                continue;
+
+            $model = ucfirst(Inflect::pluralize($name)) . 'Model';
+            $function = 'getBy' . $field;
+            $reflexModel = new ReflectionClass($model);
+            $this->$name = $reflexModel->newInstance()->$function($pk);
+            return $this->$name;
+        }
+        throw new UnknownRelationException('This table has no relation by the name of ' . $name);
     }
 
 }

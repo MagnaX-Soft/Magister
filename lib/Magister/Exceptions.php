@@ -39,7 +39,7 @@ class UrlException extends MagisterException {
 }
 
 /**
- * Undefined Method Exception. 
+ * Undefined method exception. 
  * 
  * Thrown when an app tried to call an undefined 
  * method.
@@ -52,11 +52,27 @@ class UndefinedMethodException extends MagisterException {
 }
 
 /**
- * Unknown DataSource Exception. Thrown when your app specifies a datasource 
- * that is not known by your install of Magister.
+ * Unknown DataSource exception.
+ * 
+ * Thrown when your app specifies a DataSource that is not known by your 
+ * installation of Magister.
+ * 
  * @package Magister
  * @subpackage Error
  */
 class UnknownDataSourceException extends MagisterException {
+    
+}
+
+/**
+ * Unknown relation exception.
+ * 
+ * Thrown when your app tries to access a relation in an object that has not 
+ * been defined.
+ * 
+ * @package Magister
+ * @subpackage Error
+ */
+class UnknownRelationException extends MagisterException {
     
 }
