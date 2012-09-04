@@ -10,5 +10,6 @@ routes.php
 config.php
 config.local.php
 *.swp
-*/cache/*
-/docs/
+cache/
+docs/
+*.c9save
