@@ -76,3 +76,16 @@ class UnknownDataSourceException extends MagisterException {
 class UnknownRelationException extends MagisterException {
     
 }
+
+/**
+ * Unknown configuration exception.
+ * 
+ * Thrown when the app tries to get a the value of a configuration key that 
+ * doesn't exist.
+ * 
+ * @package Magister
+ * @subpackage Error
+ */
+class UnknownConfigurationException extends MagisterException {
+    
+}

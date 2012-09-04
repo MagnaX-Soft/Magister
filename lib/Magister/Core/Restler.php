@@ -1,24 +1,15 @@
 <?php
 
 /**
- * This file contains all REST API functionality. The REST functionality is 
- * being handled by Restler. 
+ * This file contains all REST API functionality. The REST functionality is
+ * being handled by Restler.
  * @package Restler
  */
 /**
- * The path to Restler. 
+ * The path to Restler.
  * @package Restler
  */
 define('RESTLER_PATH', ROOT . '/common/');
-
-/**
- * Manage compatibility with PHP 5 < PHP 5.3.
- * @return bool 
- */
-function isRestlerCompatibilityModeEnabled() {
-    global $compatibilityMode;
-    return $compatibilityMode;
-}
 
 /**
  * REST API Server. It is the server part of the Restler framework.
@@ -698,7 +689,7 @@ class Restler {
                 $position++;
             }
             $method_flag = $method->isProtected() ?
-                    (isRestlerCompatibilityModeEnabled() ? 2 : 3) :
+                    (Config::get('mode.compatibility') ? 2 : 3) :
                     (isset($metadata['protected']) ? 1 : 0);
 
             //take note of the order

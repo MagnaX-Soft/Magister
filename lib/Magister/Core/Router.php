@@ -61,9 +61,9 @@ class Router {
      * @return Router 
      */
     public static function getInstance() {
-        if (self::$instance == NULL) {
+        if (self::$instance == NULL)
             self::$instance = new Router();
-        }
+
         return self::$instance;
     }
 

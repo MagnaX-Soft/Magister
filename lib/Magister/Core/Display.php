@@ -2,9 +2,9 @@
 
 /**
  * Display class.
- * 
+ *
  * Handles view related functions.
- * 
+ *
  * @todo Move this to templates
  * @package Magister
  * @subpackage View
@@ -13,9 +13,9 @@ class Display {
 
     /**
      * Header method.
-     * 
+     *
      * Returns the HTTP status code, MIME type, charset and header HTML.
-     * 
+     *
      * @param string $title
      * @return string
      */
@@ -45,21 +45,20 @@ class Display {
 
     /**
      * Footer method.
-     * 
+     *
      * Returns the HTML of the page footer.
-     * 
+     *
      * @param string $extra
-     * @return string 
+     * @return string
      */
     public static function footer($extra = '') {
-        global $debugMode;
         return '            <div id="footer" class="span-24 last">
                 <p class="small right text-right">
                     Powered by Magister
                 </p>
             </div>
         </div>
-        ' . (($debugMode) ? Debug::display() : '') . '
+        ' . ((Config::get('mode.debug', false, false)) ? Debug::display() : '') . '
         ' . $extra . '
     </body>
 </html>';
@@ -67,9 +66,9 @@ class Display {
 
     /**
      * Error method.
-     * 
+     *
      * Outputs error message to the browser.
-     * 
+     *
      * @todo move this to the display class.
      * @param string $message error message
      * @param string $title title of the error page

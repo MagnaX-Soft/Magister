@@ -2,70 +2,62 @@
 /**
  * Application configuration. Any configuration in config.php can be overwritten
  * by creating a config.local.php file.
- * 
+ *
  * @package App
- * @subpackage Config 
+ * @subpackage Config
  */
 
 /**
  * Database configuration.
- * 
+ *
  * The required settings depend on the datasource (type) used.
  */
-$dbConfig = array(
-    'type' => 'mysql',
-    'host' => 'localhost',
-    'name' => 'magister',
-    'user' => 'root',
-    'pass' => '',
-    'port' => 3306,
-    'prefix' => 'mag'
-);
+Config::set('DB.type', 'mysql');
+Config::set('DB.host', 'localhost');
+Config::set('DB.name', 'magister');
+Config::set('DB.user', 'root');
+Config::set('DB.pass', '');
+Config::set('DB.port', 3306);
+Config::set('DB.prefix', 'mag');
 
 /**
- * If your website is in a directory, set it here. The path must start with a 
- * slash, but not end with one. 
+ * If your website is in a directory, set it here. The path must start with a
+ * slash, but not end with one.
  */
-$routingConfig = array(
-    'basePath' => '',
-);
+Config::set('routing.basePath', '');
 
 /**
  * This string is used to hash passwords.
- * 
+ *
  * The longer the better.
  */
-$passwordHash = 'PUT A RANDOM STRING HERE';
+Config::set('security.hash.password', 'PUT A RANDOM STRING HERE');
 
 /**
- * If using PHP < 5.3, set to true.
+ * Compatibility mode is used to emulate certain features in PHP < 5.3. It is
+ * automatically set to the correct value at runtime.
  */
+Config::set('mode.compatibility', false);
 $compatibilityMode = false;
 if (version_compare(PHP_VERSION, '5.3.0', '<'))
-    $compatibilityMode = true;
+    Config::set('mode.compatibility', true);
 
 /**
- * Debug mode. 
+ * Debug mode.
  */
-$debugMode = true;
+Config::set('mode.debug', false);
 
 /**
  * Session configuration.
- * 
+ *
  * Alphanumerics, undescores and dashes only.
  */
-$sessionConfig = array(
-    'name' => 'Magister_App'
-);
+Config::set('session.name', 'Magister_App');
 
 /**
  * Sets the timezone.
  */
 date_default_timezone_set('America/Toronto');
 
-/**
- * Defines the configuration variables as global.
- */
-global $dbConfig, $routingConfig, $passwordHash, $compatibilityMode, $debugMode, $sessionConfig;
-
+// Loads local app configuration.
 Autoload::loadApp('config.local');

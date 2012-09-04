@@ -4,10 +4,8 @@
  * @package App
  */
 
-global $routingConfig;
-
 $router = Router::getInstance();
-$router->setBasePath($routingConfig['basePath']);
+$router->setBasePath(Config::get('routing.basePath'));
 
 // Index route. Must be first
 $router->map('/', array('target' => array('controller' => 'Pages', 'action' => 'view'), 'name' => 'page#index', 'params' => array('page' => 'index')));
