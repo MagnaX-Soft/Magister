@@ -55,6 +55,16 @@ Config::set('mode.debug', false);
 Config::set('session.name', 'Magister_App');
 
 /**
+ * Log configuration.
+ *
+ * The path can either be a directory (files for different levels are
+ * automatically created) or the special value syslog. Not logging errors is
+ * bad, so you should always log errors.
+ */
+Config::set('log.enabled', true);
+Config::set('log.location', APP_DIR);
+
+/**
  * Sets the timezone.
  */
 date_default_timezone_set('America/Toronto');
