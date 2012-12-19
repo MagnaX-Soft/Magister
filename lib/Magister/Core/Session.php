@@ -2,9 +2,9 @@
 
 /**
  * Session class.
- *
- * Handles all session-related matters.
- *
+ * 
+ * Handles all session-related matters. 
+ * 
  * @package Magister
  * @subpackage Core
  */
@@ -12,7 +12,7 @@ class Session {
 
     /**
      * Login method.
-     *
+     * 
      * Logs the current user in.
      */
     public static function login() {
@@ -21,7 +21,7 @@ class Session {
 
     /**
      * Logout method.
-     *
+     * 
      * Logs the current user out.
      */
     public static function logout() {
@@ -30,10 +30,10 @@ class Session {
 
     /**
      * IsLogin method.
-     *
+     * 
      * Returns login status.
-     *
-     * @return bool
+     * 
+     * @return bool 
      */
     public static function isLogin() {
         if (isset($_SESSION['login']) && $_SESSION['login'] == true) {
@@ -44,8 +44,8 @@ class Session {
 
     /**
      * Start method.
-     *
-     * Starts the session management.
+     * 
+     * Starts the session management. 
      */
     public static function start() {
         session_name(Config::get('session.name'));
@@ -54,8 +54,8 @@ class Session {
 
     /**
      * Destroy method.
-     *
-     * Destroys current session (logs user out), and start a clean new one.
+     * 
+     * Destroys current session (logs user out), and start a clean new one. 
      */
     public static function destroy() {
         session_destroy();
@@ -65,9 +65,9 @@ class Session {
 
     /**
      * AddMessage method.
-     *
+     * 
      * Adds a flash message to the session.
-     *
+     * 
      * @param string $type Either `notice`, `error`, `success` or `info`.
      * @param string $content The message to display.
      */
@@ -80,10 +80,10 @@ class Session {
 
     /**
      * GetMessages method.
-     *
-     * Retrieves flash messages in HTML form. If $type is not specified,
+     * 
+     * Retrieves flash messages in HTML form. If $type is not specified, 
      * retrieves all messages.
-     *
+     * 
      * @param string $type Either `notice`, `error`, `success`, `info` or `all`.
      * Defaults to `all`.
      * @param bool $format Format the messages to html.

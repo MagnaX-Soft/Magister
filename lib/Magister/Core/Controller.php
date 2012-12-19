@@ -11,6 +11,13 @@
 abstract class Controller {
 
     /**
+     * Holds the name of the current object.
+     * 
+     * @var string
+     */
+    public $name;
+
+    /**
      * Autoload the associated model.
      * 
      * @var bool 
@@ -25,11 +32,25 @@ abstract class Controller {
     protected $model;
 
     /**
+     * Holds the instance of the view object.
+     * 
+     * @var View
+     */
+    protected $view;
+
+    /**
      * Holds the parameters for the current request.
      * 
      * @var array 
      */
     protected $params;
+
+    /**
+     * Holds the target of the current request.
+     * 
+     * @var array 
+     */
+    protected $target;
 
     /**
      * Controller constructor.
@@ -38,20 +59,13 @@ abstract class Controller {
      * 
      * @param array $params 
      */
-    public function __construct(array $params = null) {
-        if (is_array($params))
-            $this->setParams($params);
-    }
-
-    /**
-     * SetParams method.
-     * 
-     * Sets the request parameters.
-     * 
-     * @param array $params
-     */
-    public function setParams(array $params) {
+    public function __construct(array $params, array $target) {
+        $this->name = substr(get_class($this), 0, -10);
+        $this->view = View::getInstance();
         $this->params = $params;
+        $this->target = $target;
+
+        $this->loadModel();
     }
 
     /**
@@ -59,10 +73,50 @@ abstract class Controller {
      * 
      * If Controller::load is true, loads the required model. 
      */
-    public function loadModel() {
-        $name = substr(get_class($this), 0, -10) . 'Model';
+    private function loadModel() {
         if ($this->load)
-            $this->model = new $name;
+            $this->model = new $this->target['model'];
+    }
+
+    /**
+     * Redirect function.
+     * 
+     * Redirects the client to the specified location.
+     * 
+     * @param string $location The redirect location.
+     */
+    protected function redirect($location) {
+        $this->view->redirect($location);
+    }
+
+    /**
+     * Render method.
+     * 
+     * Renders the current view and serves it to the client.
+     * 
+     * @param string $template
+     */
+    protected function render($template = null) {
+        if (null === $template)
+            $template = $this->target['action'];
+
+        $this->view->setVar('content', $this->view->fetch($template, $this->name));
+        $this->view->render();
+    }
+
+    /**
+     * Fragment method.
+     * 
+     * Renders the current view as a fragment and serves it to the client.
+     * 
+     * @param string $template
+     */
+    protected function renderFragment($template = null) {
+        if (null === $template)
+            $template = $this->target['action'];
+
+        $this->view->setVar('content', $this->view->fetch($template, $this->name));
+        $this->view->fragment();
     }
 
 }

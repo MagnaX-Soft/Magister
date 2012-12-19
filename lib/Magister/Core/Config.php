@@ -42,7 +42,7 @@ class Config {
      */
     public static function get($key, $strict = true, $default = '') {
         if (!array_key_exists($key, self::$data) && $strict == true)
-            throw new UnknownConfigurationException();
+            throw new UnknownConfigurationException($key);
         elseif (!array_key_exists($key, self::$data) && $strict != true)
             return $default;
 
@@ -62,6 +62,6 @@ class Config {
      * @return bool
      */
     public static function notEmpty($key) {
-        return self::exists($key) && !empty(self::$data[key]);
+        return self::exists($key) && !empty(self::$data[$key]);
     }
 }

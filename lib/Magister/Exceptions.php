@@ -78,14 +78,37 @@ class UnknownRelationException extends MagisterException {
 }
 
 /**
- * Unknown configuration exception.
+ * I18n exception.
  * 
- * Thrown when the app tries to get a the value of a configuration key that 
- * doesn't exist.
+ * Thrown on any I18n error.
  * 
  * @package Magister
  * @subpackage Error
  */
+class I18nException extends MagisterException {
+    
+}
+
+/**
+ * Duplicate key exception.
+ * 
+ * Thrown when the system detects that a key has already been defined.
+ * 
+ * @package Magister
+ * @subpackage Error
+ */
+class DuplicateKeyException extends MagisterException {
+    
+}
+
+class FileNotFoundException extends MagisterException {
+    
+}
+
+class ViewException extends MagisterException {
+    
+}
+
 class UnknownConfigurationException extends MagisterException {
     
 }

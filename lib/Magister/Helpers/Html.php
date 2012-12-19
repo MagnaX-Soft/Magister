@@ -11,28 +11,110 @@
 class HtmlHelper {
 
     /**
-     * IncludeJS method.
-     * 
-     * Returns HTML code to include a Javascript script.
-     * 
-     * @param string $name name of the script
-     * @return string 
+     * Holds the name and related information for header-level assets.
+     * @var array
      */
-    public static function includeJS($name) {
-        return '<script src="' . UrlHelper::asset('js', $name . '.js') . '"></script>';
+    private static $assets = array();
+
+    /**
+     * AddAsset function.
+     * 
+     * Adds the specified asset to the asset array.
+     * 
+     * @param string $type
+     * @param string|array $name
+     */
+    private static function addAsset($type, $name, $first = true) {
+        if (!isset(self::$assets[$type]))
+            self::$assets[$type] = array();
+        if ($first)
+            array_unshift(self::$assets[$type], $name);
+        else
+            self::$assets[$type][] = $name;
     }
 
     /**
-     * IncludeCSS method.
+     * IncludeJS function.
+     * 
+     * Returns HTML code to include a Javascript script.
+     * 
+     * @return string 
+     */
+    public static function includeJS($name = null) {
+        $html = '';
+        if (!empty($name))
+            $html .= '<script type="text/javascript" src="' . UrlHelper::asset('js', $name . '.js') . '"></script>';
+        else {
+            $target = Router::getInstance()->currentRoute->getTarget();
+            $prefix = WEB_DIR . DS . 'assets' . DS . 'js' . DS;
+            if (file_exists($prefix . APP . '.js'))
+                self::addAsset('js', APP, false);
+            if (file_exists($prefix . APP . '.' . strtolower($target['controller']) . '.js'))
+                self::addAsset('js', APP . '.' . strtolower($target['controller']), false);
+            if (file_exists($prefix . APP . '.' . strtolower($target['controller']) . '.' . $target['action'] . '.js'))
+                self::addAsset('js', APP . '.' . strtolower($target['controller']) . '.' . $target['action'], false);
+            foreach (self::$assets['js'] as $name)
+                $html .= '<script type="text/javascript" src="' . UrlHelper::asset('js', $name . '.js') . '"></script>';
+        }
+        return $html;
+    }
+
+    /**
+     * AddJS function.
+     * 
+     * Adds the specified JS file to the header.
+     * 
+     * @throws InvalidArgumentException
+     */
+    public static function addJS() {
+        if (func_num_args() < 1)
+            throw new InvalidArgumentException('The addJS function expects at least one argument.');
+
+        foreach (func_get_args() as $name) {
+            self::addAsset('js', $name);
+        }
+    }
+
+    /**
+     * IncludeCSS function.
      * 
      * Returns HTML code to include a CSS stylesheet.
      * 
-     * @param string $name name of the stylesheet
-     * @param string $media
      * @return string 
      */
-    public static function includeCSS($name, $media = 'screen, projection') {
-        return '<link rel="stylesheet" href="' . UrlHelper::asset('css', $name . '.css') . '" type="text/css" media="' . $media . '">';
+    public static function includeCSS($name = null, $media = 'screen, projection') {
+        $html = '';
+        if (!empty($name))
+            $html .= '<link rel="stylesheet" href="' . UrlHelper::asset('css', $name . '.css') . '" type="text/css" media="' . $media . '">';
+        else {
+            foreach (self::$assets['css'] as $value) {
+                list($name, $media) = $value;
+                $html .= '<link rel="stylesheet" href="' . UrlHelper::asset('css', $name . '.css') . '" type="text/css" media="' . $media . '">';
+            }
+        }
+        return $html;
+    }
+
+    /**
+     * AddCSS function.
+     * 
+     * This function works in one of 2 ways. If the first parameter is a string, 
+     * it accepts at most 2 arguments. The first being the name of the css file, 
+     * and the second, optional, the media of that stylesheet.  
+     * If the first parameter is an array, it accepts an unlimited number of 
+     * arguments. Each argument must be an array with the name of the stylesheet 
+     * at the 0 index, and the media at the 1 index. Once again, the media is 
+     * optional.
+     */
+    public static function addCSS($name, $media = 'screen, projection') {
+        if (is_array($name)) {
+            foreach (func_get_args() as $arg) {
+                if (empty($arg[1]))
+                    $arg[1] = 'screen, projection';
+                self::addAsset('css', $arg);
+            }
+        } else
+            self::addAsset('css', array($name, $media));
     }
 
     /**
@@ -40,7 +122,7 @@ class HtmlHelper {
      * 
      * Given the current page number and the last page number, generates 
      * pagination links and returns them. If $limit is given, it generates a 
-     * field to set a custom
+     * field to set a custom limit (items per page).
      * 
      * @param int $page
      * @param int $last
@@ -51,7 +133,7 @@ class HtmlHelper {
     public static function paginate($page, $last, $limit = null, array $query = array()) {
         if ($last <= 1)
             return '';
-        
+
         $limitArray = array();
         if (!is_null($limit))
             $limitArray = array('limit' => $limit);
@@ -80,7 +162,7 @@ class HtmlHelper {
                     else
                         $pagination .= '<li><a href="' . UrlHelper::query(array_merge($query, $limitArray, array('page' => $counter))) . '">' . $counter . '</a></li>';
                 }
-                $pagination .= '<li class="dot">...</li>';
+                $pagination .= '<li class="dot">&hellip;</li>';
             } elseif ($page >= ($last - 2)) {
                 // We are in the last 3 pages. Display an ellipsis, then the 5 last links.
                 $pagination .= '<li class="dot">...</li>';
@@ -92,14 +174,14 @@ class HtmlHelper {
                 }
             } else {
                 // We are anywhere else in the pages. Display an ellipsis, 5 links and another ellipsis.
-                $pagination .= '<li class="dot">...</li>';
+                $pagination .= '<li class="dot">&hellip;</li>';
                 for ($counter = ($page - 2); $counter <= ($page + 2); $counter++) {
                     if ($counter == $page)
                         $pagination .= '<li><a class="current">' . $counter . '</a></li>';
                     else
                         $pagination .= '<li><a href="' . UrlHelper::query(array_merge($query, $limitArray, array('page' => $counter))) . '">' . $counter . '</a></li>';
                 }
-                $pagination .= '<li class="dot">...</li>';
+                $pagination .= '<li class="dot">&hellip;</li>';
             }
         }
         if ($page < $last) {
@@ -123,7 +205,7 @@ class HtmlHelper {
         }
         return $pagination;
     }
-    
+
     public static function htmlFull($tag, $contents, array $params = array()) {
         $string = '<' . $tag;
         foreach ($params as $key => $value) {
@@ -135,7 +217,7 @@ class HtmlHelper {
         $string .= '>' . $contents . '</' . $tag . '>';
         return $string;
     }
-    
+
     public static function a($href, $text = null, array $params = array()) {
         $params['href'] = $href;
         return self::htmlFull('a', (empty($text)) ? $href : $text, $params);

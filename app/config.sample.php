@@ -38,7 +38,6 @@ Config::set('security.hash.password', 'PUT A RANDOM STRING HERE');
  * automatically set to the correct value at runtime.
  */
 Config::set('mode.compatibility', false);
-$compatibilityMode = false;
 if (version_compare(PHP_VERSION, '5.3.0', '<'))
     Config::set('mode.compatibility', true);
 

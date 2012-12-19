@@ -1,13 +1,14 @@
 <?php
+
 /**
  * Various miscellaneous functions.
  * @package Magister
  * @subpackage Core
  */
-
 /**
  * Error handlers.
  */
+error_reporting(E_ALL | E_STRICT);
 set_error_handler('errorToExceptionHandler');
 register_shutdown_function('fatalErrorShutdownHandler');
 
@@ -36,8 +37,8 @@ function fatalErrorShutdownHandler() {
     $last_error = error_get_last();
     if ($last_error['type'] === E_ERROR) {
         // fatal error
-        ob_clean();
-        Display::error($last_error['message'] . ' in ' . $last_error['file'] . ' on line ' . $last_error['line'] . '.');
+        $errorException = new ErrorException($last_error['message'], 1, 0, $last_error['file'], $last_error['line']);
+        View::getInstance()->renderError($errorException);
     }
 }
 
@@ -55,18 +56,6 @@ function createHash($string) {
 }
 
 /**
- * Redirect function.
- *
- * Redirects the client to the specified location.
- *
- * @param string $location The redirect location.
- */
-function redirect($location) {
-    header('Location: ' . $location);
-    exit();
-}
-
-/**
  * SetFilled function.
  *
  * Returns true if all the keys specified in $array are set and not empty in the
@@ -81,7 +70,7 @@ function redirect($location) {
 function setFilled(array $param, array $array) {
     foreach ($array as $field) {
         if (!isset($param[$field]) || empty($param[$field]))
-            throw new InvalidArgumentException('Required field ' . $field . ' was not defined in given array');
+            throw new InvalidArgumentException(sprintf(__('Required field \'%s\' was not present.', 'magister'), $field));
     }
     return true;
 }
@@ -92,11 +81,11 @@ function setFilled(array $param, array $array) {
  * Processes the current request and dispatches the correct action.
  */
 function run() {
-    ob_start();
-
-    Session::start();
-
     try {
+        Session::start();
+        I18n::determineLanguage();
+
+        Router::getInstance()->setBasePath(Config::get('routing.basePath'));
         $route = Router::getInstance()->matchCurrentRequest();
 
         $target = $route->getTarget();
@@ -105,19 +94,15 @@ function run() {
 
         $reflex = new ReflectionClass($target['controller']);
         if (!$reflex->hasMethod($target['action']))
-            throw new RoutingException('Controller ' . $target['controller'] . ' has no action ' . $target['action'] . '.');
-        $instance = $reflex->newInstance($route->getParameters());
-        $instance->loadModel();
+            throw new RoutingException(sprintf(__("Controller '%s' has no '%s' action.", 'magister'), $target['controller'], $target['action']));
 
+        $instance = $reflex->newInstance($route->getParameters(), $target);
         $instance->{$target['action']}();
     } catch (RoutingException $e) {
-        ob_clean();
-        Display::error('The requested URL was not found. Please <a href="javascript:history.go(-1)">go back</a>.<pre>' . $e->getMessage() . '</pre>', 'Page Not Found', '404 Not Found');
+        View::getInstance()->renderError($e, null, '404');
     } catch (Exception $e) {
-        ob_clean();
-        Display::error($e->getMessage() . ' in ' . $e->getFile() . ' on line ' . $e->getLine() . '.');
+        View::getInstance()->renderError($e);
     }
-    ob_end_flush();
 }
 
 /**
@@ -157,5 +142,61 @@ function compat_strstr($haystack, $needle, $before_needle = false) {
  * otherwise.
  */
 function getValue(array $array, $key, $default = '') {
-    return (isset($array[$key])) ? $array[$key] : $default;
+    return (isset($array[$key])) ? stripslashes($array[$key]) : $default;
+}
+
+/**
+ * Translates the given string in the given domain.
+ *
+ * @param string $string
+ * @param string $domain
+ * @return string
+ */
+function __($string, $domain = APP) {
+    return I18n::translate($string, $domain);
+}
+
+/**
+ * Translates and prints the given string in the given domain.
+ *
+ * @param string $string
+ * @param string $domain
+ */
+function __e($string, $domain = APP) {
+    echo I18n::translate($string, $domain);
+}
+
+/**
+ * Encodes the input string for displaying in html.
+ *
+ * @param string $text
+ * @return string
+ */
+function h($text) {
+    return htmlspecialchars($text, ENT_QUOTES);
+}
+
+/**
+ * Prints the html encoded text.
+ *
+ * @see h()
+ * @param type $text
+ */
+function eh($text) {
+    echo h($text);
+}
+
+
+/**
+ * Returns true if all the keys in the array are integers.
+ *
+ * @param array $array
+ * @return boolean
+ */
+function is_indexed(array &$array) {
+    foreach (array_keys($array) as $key) {
+        if (!is_int($key))
+            return false;
+    }
+    return true;
 }

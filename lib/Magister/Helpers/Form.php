@@ -11,6 +11,15 @@
 class FormHelper {
 
     /**
+     * Creates a new Form.
+     * 
+     * @return Form
+     */
+    public static function create() {
+        return new Form();
+    }
+
+    /**
      * SelectFromModel method.
      * 
      * Generates a select form field using all the rows from a model. See 
@@ -21,13 +30,21 @@ class FormHelper {
      * @param string $field
      * @return string 
      */
-    public static function selectFromModel(Model $model, array $options = array(), $field = 'name') {
-        if (!isset($options['name']))
-            $options['name'] = strtolower(Inflect::singularize(substr(get_class($model), 0, -5)));
-        $query = $model->getAll(null);
+    public static
+
+    function selectFromModel(Model $model, array $options = array(), $field = null) {
+        if (null === $field)
+            $field = I18n::getLanguage();
+        $options['name'] = getValue($options, 'name', strtolower(Inflect::singularize(substr(get_class($model), 0, -5))));
+        $function = getValue($options, 'function', 'getAll');
+        $query = $model->$function(null);
         $items = array();
-        while ($row = $query->fetchObject($model->getClass()))
+        while ($row = $query->fetchObject($model->getClass())) {
+            if (method_exists($row, 'display'))
+                    $items[$row->id] = $row->display();
+            else
             $items[$row->id] = $row->{$field};
+        }
         return self::selectFromArray($items, $options);
     }
 
@@ -44,19 +61,37 @@ class FormHelper {
      * @param array $options 
      * @return string
      */
-    public static function selectFromArray(array $items, array $options = array()) {
+    public static
+
+    function selectFromArray(array $items, array $options = array()) {
         $height = (int) getValue($options, 'height', 1);
         $multiple = (bool) getValue($options, 'multiple', false);
-        $name = (string) getValue($options, 'name', '');
+        $name = (string) getValue($options, 'name', md5(time()));
         $selected = (array) getValue($options, 'selected', array());
         if ($multiple)
             $name .= '[]';
 
         $html = '<select name="' . $name . '" size="' . $height . '"' . (($multiple) ? ' multiple' : '') . '>';
         foreach ($items as $value => $name)
-            $html .= '<option value="' . $value . '"' . ((in_array($value, $selected)) ? ' selected' : '') . '>' . $name . '</option>';
+            $html .= '<option value="' . h($value) . '"' . ((in_array($value, $selected)) ? ' selected' : '') . '>' . h($name) . '</option>';
         $html .= '</select>';
         return $html;
+    }
+
+}
+
+class Form {
+
+    public function start(array $options) {
+        //
+    }
+
+    public function end() {
+        //
+    }
+
+    public function output() {
+        //
     }
 
 }

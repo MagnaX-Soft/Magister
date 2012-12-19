@@ -20,13 +20,33 @@ class Autoload {
      * Searches for and loads a file in the application directory.
      * 
      * @param string $name Name of the file or class.
+     * @param string $dir The subdirectory where the file is located. Can be `null`.
      * @param string $ext Extension with a leading dot. Defaults to `.php`.
      * @return bool Status of the load.
      */
-    public static function loadApp($name, $ext = '.php') {
-        $file = APP_DIR . DS . $name . $ext;
+    public static function loadApp($name, $dir = null, $ext = '.php') {
+        $file = APP_DIR . DS . ((null !== $dir) ? $dir . DS : '') . $name . $ext;
         if (file_exists($file)) {
             require_once $file;
+            return true;
+        }
+        return false;
+    }
+
+    /**
+     * LoadLib method.
+     * 
+     * Searches for and loads a library file by name.
+     * 
+     * @param string $name Name of the file or class.
+     * @param string $dir The subdirectory where the file is located. Can be `null`.
+     * @param string $ext Extension with a leading dot. Defaults to `.php`.
+     * @return bool Status of the load.
+     */
+    public static function loadLib($name, $dir = null, $ext = '.php') {
+        $common = LIB_DIR . DS . ((null !== $dir) ? $dir . DS : '') . $name . $ext;
+        if (file_exists($common)) {
+            require_once $common;
             return true;
         }
         return false;
@@ -41,145 +61,131 @@ class Autoload {
      * @return bool Status of the load.
      */
     public static function loadAppLib($name) {
-        return self::loadApp('Lib' . DS . $name);
+        return self::loadApp($name, 'Lib');
     }
 
     /**
-     * LoadController method.
+     * LoadAppController method.
      * 
      * Searches for and loads a controller by name.
      * 
      * @param string $name Name of the controller.
      * @return bool Status of the load.
      */
-    public static function loadController($name) {
-        if (strpos($name, 'Controller') !== false) {
-            return self::loadApp('Controllers' . DS . $name);
-        }
+    public static function loadAppController($name) {
+        if (false !== strpos($name, 'Controller'))
+            return self::loadApp($name, 'Controllers');
         return false;
     }
 
     /**
-     * LoadModel method.
+     * LoadAppModel method.
      * 
      * Searches for and loads a model by name.
      * 
      * @param string $name Name of the Model.
      * @return bool Status of the load.
      */
-    public static function loadModel($name) {
-        if (strpos($name, 'Model') !== false) {
-            return self::loadApp('Models' . DS . $name);
-        }
+    public static function loadAppModel($name) {
+        if (false !== strpos($name, 'Model'))
+            return self::loadApp($name, 'Models');
         return false;
     }
 
     /**
-     * LoadObject method.
+     * LoadAppRow method.
      * 
-     * Searches for and loads an object by name
+     * Searches for and loads an row by name
      * 
-     * @param string $name Name of the object.
+     * @param string $name Name of the row.
      * @return bool Status of the load.
      */
-    public static function loadObject($name) {
-        if (!class_exists('RowObject'))
-            self::loadCore('Model');
-        return self::loadApp('Models' . DS . Inflect::pluralize($name) . 'Model');
+    public static function loadAppRow($name) {
+        return self::loadApp(Inflect::pluralize($name) . 'Model', 'Models');
     }
 
     /**
-     * LoadLib method.
-     * 
-     * Searches for and loads a library file by name.
-     * 
-     * @param string $name Name of the file or class.
-     * @param string $ext Extension with a leading dot. Defaults to `.php`.
-     * @return bool Status of the load.
-     */
-    public static function loadLib($name, $ext = '.php') {
-        $common = LIB_DIR . DS . 'Magister' . DS . $name . $ext;
-        if (file_exists($common)) {
-            require_once $common;
-            return true;
-        }
-        return false;
-    }
-
-    /**
-     * LoadCore method.
+     * LoadLibCore method.
      * 
      * Searches for and loads a core file by name.
      * 
      * @param string $name Name of the file or class.
      * @return bool Status of the load.
      */
-    public static function loadCore($name) {
-        return self::loadLib('Core' . DS . $name);
+    public static function loadLibCore($name) {
+        return self::loadLib($name, 'Core');
     }
 
     /**
-     * LoadHelper method.
+     * LoadLibHelper method.
      * 
      * Searches for and loads a helper by name.
      * 
      * @param string $name Name of the Helper.
      * @return bool Status of the load.
      */
-    public static function loadHelper($name) {
-        if (strpos($name, 'Helper') !== false) {
-            self::loadLib('Helpers' . DS . ucfirst(compat_strstr($name, 'Helper', true)));
-        }
+    public static function loadLibHelper($name) {
+        if (false !== strpos($name, 'Helper'))
+            return self::loadLib(ucfirst(strtolower(compat_strstr($name, 'Helper', true))), 'Helpers');
         return false;
     }
 
     /**
-     * LoadDataSource method.
+     * loadLibModel method.
+     * 
+     * Loads files in the Model directory in the Magister lib location.
+     * 
+     * @param string $name Name of the class.
+     * @return bool Status of the load.
+     */
+    public static function loadLibModel($name) {
+        return self::loadLib($name, 'Model');
+    }
+
+    /**
+     * LoadLibDataSource method.
      * 
      * Searches for and loads a datasource by name.
      * 
      * @param string $name Name of the datasource.
      * @return bool Status of the load.
      */
-    public static function loadDataSource($name) {
-        if (strpos($name, 'DataSource') !== false) {
-            self::loadLib('DataSource' . DS . compat_strstr($name, 'DataSource', true));
-        }
+    public static function loadLibDataSource($name) {
+        if (false !== strpos($name, 'DataSource'))
+            return self::loadLib(compat_strstr($name, 'DataSource', true), 'Model' . DS . 'DataSource');
         return false;
     }
 
     /**
-     * LoadException method.
+     * LoadLibException method.
      * 
      * Loads all exceptions.
      * 
      * @param string $name Name of the exception.
      * @return bool Status of the load.
      */
-    public static function loadException($name) {
-        if (strpos($name, 'Exception') !== false) {
+    public static function loadLibException($name) {
+        if (false !== strpos($name, 'Exception'))
             return self::loadLib('Exceptions');
-        }
         return false;
     }
 
 }
 
-/* The order can always be improved, but I currently set it so that it first 
- * goes through the loaders that check for the name, no matter where their 
- * location, then go through the application-specific loaders, than the library 
- * loaders.
- * 
- * `loadObject` must always come after `loadLib`, due to it's use of the Inflect
- * class.
+/**
+ * The order is not so important, as a missing class will just trigger a new 
+ * loading sequence. However, it is best to put the functions that test the 
+ * class name first, simply because they either return fast (it's a string 
+ * check) or load the class and end the loading sequence.
  */
-spl_autoload_register(array('Autoload', 'loadException'));
-spl_autoload_register(array('Autoload', 'loadController'));
-spl_autoload_register(array('Autoload', 'loadModel'));
-spl_autoload_register(array('Autoload', 'loadHelper'));
-spl_autoload_register(array('Autoload', 'loadDataSource'));
+spl_autoload_register(array('Autoload', 'loadLibException'));
+spl_autoload_register(array('Autoload', 'loadAppController'));
+spl_autoload_register(array('Autoload', 'loadAppModel'));
+spl_autoload_register(array('Autoload', 'loadLibHelper'));
+spl_autoload_register(array('Autoload', 'loadLibDataSource'));
 spl_autoload_register(array('Autoload', 'loadAppLib'));
 spl_autoload_register(array('Autoload', 'loadApp'));
-spl_autoload_register(array('Autoload', 'loadCore'));
+spl_autoload_register(array('Autoload', 'loadLibCore'));
+spl_autoload_register(array('Autoload', 'loadLibModel'));
 spl_autoload_register(array('Autoload', 'loadLib'));
-spl_autoload_register(array('Autoload', 'loadObject'));
+spl_autoload_register(array('Autoload', 'loadAppRow'));

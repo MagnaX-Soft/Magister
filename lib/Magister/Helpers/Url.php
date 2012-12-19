@@ -45,8 +45,12 @@ class UrlHelper {
      * @param array $params
      * @return string 
      */
-    public static function route(array $route, array $params = array()) {
-        return Router::getInstance()->generate($route, $params);
+    public static function route(array $route, array $params = array(), array $query = array()) {
+        return Router::getInstance()->generate($route, $params) . ( (!empty($query)) ? '?' . http_build_query($query) : '');
+    }
+    
+    public static function host() {
+        return $_SERVER['HTTP_HOST'];
     }
 
     /**

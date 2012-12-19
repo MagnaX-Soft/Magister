@@ -3,8 +3,10 @@
 /**
  * Router class.
  * 
- * Routing class to match request URL's against given routes and map them to a 
- * controller action.
+ * Generates routes from given parameters and stores them. Can match a request 
+ * to its associated route, returning that route object. Can generate an URL 
+ * from given parameters if the parameters have been associated with a given 
+ * route.
  * 
  * @package Magister
  * @subpackage PHP-Router
@@ -61,9 +63,9 @@ class Router {
      * @return Router 
      */
     public static function getInstance() {
-        if (self::$instance == NULL)
+        if (self::$instance == NULL) {
             self::$instance = new Router();
-
+        }
         return self::$instance;
     }
 
@@ -120,24 +122,29 @@ class Router {
      * @param array $args Array of optional arguments.
      */
     public function map($routeUrl, array $args = array()) {
-        $route = new Route();
-        $route->setUrl($routeUrl);
+        if (is_array($routeUrl)) {
+            foreach ($routeUrl as $key => $value)
+                $this->map($key, $value);
+        } else {
+            $route = new Route();
+            $route->setUrl($routeUrl);
 
-        if (isset($args['target']))
-            $route->setTarget($args['target']);
+            if (isset($args['target']))
+                $route->setTarget($args['target']);
 
-        if (isset($args['methods'])) {
-            $methods = explode('|', $args['methods']);
-            $route->setMethods($methods);
+            if (isset($args['methods'])) {
+                $methods = (is_array($args['methods'])) ? $args['methods'] : explode('|', $args['methods']);
+                $route->setMethods($methods);
+            }
+
+            if (isset($args['filters']))
+                $route->setFilters($args['filters']);
+
+            if (isset($args['params']))
+                $route->setParameters($args['params']);
+
+            $this->routes[] = $route;
         }
-
-        if (isset($args['filters']))
-            $route->setFilters($args['filters']);
-
-        if (isset($args['params']))
-            $route->setParameters($args['params']);
-
-        $this->routes[] = $route;
     }
 
     /**
@@ -164,7 +171,7 @@ class Router {
      * @return Route
      * @throws RoutingException 
      */
-    public function match($requestUrl, $requestMethod = 'GET') {
+    private function match($requestUrl, $requestMethod = 'GET') {
         $cleanUrl = str_replace($this->getBasePath(), '', $requestUrl);
         foreach ($this->routes as $route) {
             // compare server request method with route's allowed http methods
@@ -220,24 +227,35 @@ class Router {
      * @return string The url to the route
      * @throws UrlException 
      */
-    public function generate(array $target, array $params = array()) {
+    public function generate(array $rawTarget, array $params = array()) {
+        $target = array(
+            'controller' => getValue($rawTarget, 'controller', null),
+            'action' => getValue($rawTarget, 'action', null)
+        );
+        if (is_indexed($rawTarget)) {
+            if (2 == count($rawTarget)) {
+                $target['controller'] = $rawTarget[0];
+                $target['action'] = $rawTarget[1];
+            } elseif (1 == count($rawTarget))
+                $target['action'] = $rawTarget[0];
+        }
         // Check that controller is complete
-        if (!isset($target['controller']) || empty($target['controller'])) {
+        if (!isset($target['controller']) || empty($target['controller']) || null === $target['controller']) {
             if ($this->currentRoute instanceof Route) {
                 $currentTarget = $this->currentRoute->getTarget();
                 if (!empty($currentTarget['controller']))
                     $target['controller'] = $currentTarget['controller'];
                 else
-                    throw new UrlException('Incomplete target was given for route generation.');
+                    throw new UrlException('Incomplete target was given for route generation (Current route has no controller).');
             } else
-                throw new UrlException('Incomplete target was given for route generation.');
+                throw new UrlException('Incomplete target was given for route generation (No current route).');
         }
 
         if (!isset($target['action']))
             $target['action'] = 'index';
 
         foreach ($this->routes as $route) {
-            if (!$route->matchTarget($target, $params))
+            if (!$route->match($target, $params))
                 continue;
 
             $url = $route->getUrl();
@@ -264,218 +282,6 @@ class Router {
         }
 
         throw new UrlException("No route matching {$target['controller']}#{$target['action']}(" . urldecode(http_build_query($params)) . ") has been found.");
-    }
-
-}
-
-/**
- * A route.
- * @package PHP-Router
- */
-class Route {
-
-    /**
-     * URL of this Route
-     * @var string
-     */
-    private $url;
-
-    /**
-     * Regex of this Route.
-     * @var string
-     */
-    private $regex;
-
-    /**
-     * Accepted HTTP methods for this route
-     * @var array
-     */
-    private $methods = array('GET');
-
-    /**
-     * Target for this route, can be anything.
-     * @var array
-     */
-    private $target = array('controller' => null, 'action' => null);
-
-    /**
-     * The name of this route, used for reversed routing
-     * @var string
-     */
-    private $name;
-
-    /**
-     * Custom parameter filters for this route
-     * @var array
-     */
-    private $filters = array();
-
-    /**
-     * Array containing parameters passed through request URL.
-     * @var array
-     */
-    private $parameters = array();
-
-    /**
-     * Returns the route's URL.
-     * @return string 
-     */
-    public function getUrl() {
-        return $this->url;
-    }
-
-    /**
-     * Sets the route's URL.
-     * @param string $url 
-     */
-    public function setUrl($url) {
-        $url = (string) $url;
-
-        // make sure that the URL is suffixed with a forward slash
-        if (substr($url, -1) !== '/')
-            $url .= '/';
-
-        $this->url = $url;
-    }
-
-    /**
-     * Returns the route's target.
-     * @return mixed 
-     */
-    public function getTarget() {
-        return $this->target;
-    }
-
-    /**
-     * Sets the route's target.
-     * @param mixed $target 
-     */
-    public function setTarget($target) {
-        $this->target = $target;
-    }
-
-    /**
-     * MatcheTarget method.
-     * 
-     * Determines if the route matches the given target and parameter.
-     * 
-     * @param type $target
-     * @param array $params
-     * @return boolean
-     */
-    public function matchTarget($target, array $params = array()) {
-        $paramCount = substr_count($this->getUrl(), ':');
-
-        // Same controller, action and the given params count is equal to the 
-        // number of required parameters
-        // OR
-        // Controller and action are empty and the given params count is equal 
-        // to the number of required parameters
-        if (($this->target['controller'] == $target['controller']
-                && $this->target['action'] == $target['action']
-                && $paramCount == count($params))
-                || (empty($this->target['controller'])
-                && empty($this->target['action'])
-                && ($paramCount - 2) == count($params))) {
-            foreach ($params as $key => $value) {
-                // Making sure that the right parameters have been passed.
-                if (strpos($this->getUrl(), ':' . $key) === false)
-                    return false;
-            }
-            return true;
-        }
-
-        return false;
-    }
-
-    /**
-     * Returns the route's HTTP methods.
-     * @return array 
-     */
-    public function getMethods() {
-        return $this->methods;
-    }
-
-    /**
-     * Sets the route's HTTP methods.
-     * @param array $methods 
-     */
-    public function setMethods(array $methods) {
-        $this->methods = $methods;
-    }
-
-    /**
-     * Returns the route's name.
-     * @return string 
-     */
-    public function getName() {
-        return $this->name;
-    }
-
-    /**
-     * Sets the route's name.
-     * @param string $name 
-     */
-    public function setName($name) {
-        $this->name = (string) $name;
-    }
-
-    /**
-     * Sets the route's filters.
-     * @param array $filters 
-     */
-    public function setFilters(array $filters) {
-        $this->filters = $filters;
-    }
-
-    /**
-     * Returns the route's regex.
-     * @return string 
-     */
-    public function getRegex() {
-        if (empty($this->regex))
-            $this->regex = preg_replace_callback("@:(\w+)@", array(&$this, 'substituteFilter'), $this->url);
-
-        return $this->regex;
-    }
-
-    /**
-     * Returns the regex associated with a parameter.
-     * @param array $matches
-     * @return string 
-     */
-    private function substituteFilter($matches) {
-        if (isset($this->filters[$matches[1]]))
-            return $this->filters[$matches[1]];
-
-        switch ($matches[1]) {
-            case 'id':
-                return '([\d]+)';
-            case 'year':
-                return '([12][\d]{3})';
-            case 'month':
-                return '(0[\d]|1[012])';
-            case 'date':
-                return '(0?[\d]|[12][\d]|3[01])';
-            default:
-                return '([\w-]+)';
-        }
-    }
-
-    /**
-     * Returns the route's parameters.
-     * @return array 
-     */
-    public function getParameters() {
-        return $this->parameters;
-    }
-
-    /**
-     * Sets the route's parameters.
-     * @param array $parameters 
-     */
-    public function setParameters(array $parameters) {
-        $this->parameters = $parameters;
     }
 
 }
