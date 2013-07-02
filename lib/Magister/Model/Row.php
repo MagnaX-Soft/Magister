@@ -2,39 +2,39 @@
 
 /**
  * Base Row Class.
- * 
+ *
  * Main class for rows.
- * 
+ *
  * @package Magister
- * @subpackage Model 
+ * @subpackage Model
  */
 abstract class Row {
 
     /**
      * The associated Model.
-     * 
-     * @var Model 
+     *
+     * @var Model
      */
     protected $model;
 
     /**
      * The associated model name.
-     * 
+     *
      * @var string
      */
     protected $modelName;
 
     /**
      * Holds the row's relations
-     * 
+     *
      * @var array
      */
     protected $relation = array();
 
     /**
      * Row constructor.
-     * 
-     * Instanciates the associated model. If the child Row defined a 
+     *
+     * Instanciates the associated model. If the child Row defined a
      * prepare method, calls it.
      */
     public function __construct() {
@@ -45,10 +45,10 @@ abstract class Row {
 
     /**
      * Save method.
-     * 
+     *
      * Inserts or update the row in the database.
-     * 
-     * @return bool 
+     *
+     * @return bool
      */
     public function save() {
         if (!empty($this->id))
@@ -59,11 +59,11 @@ abstract class Row {
 
     /**
      * Update method.
-     * 
-     * Updates the values of the currently loaded row to new values, but does 
+     *
+     * Updates the values of the currently loaded row to new values, but does
      * not save the modifications.
-     * 
-     * @param array $data 
+     *
+     * @param array $data
      */
     public function update(array $data) {
         foreach ($data as $key => $value) {
@@ -79,16 +79,16 @@ abstract class Row {
                 }
             }
             if (isset($this->{$key}))
-                $this->{$key} = $value;
+                $this->{$key} = stripslashes_deep($value);
         }
     }
 
     /**
      * Delete method.
-     * 
+     *
      * Deletes the current row from database.
-     * 
-     * @return bool 
+     *
+     * @return bool
      */
     public function delete() {
         return $this->model->delete($this);
@@ -96,7 +96,7 @@ abstract class Row {
 
     /**
      * LoadModel method.
-     * 
+     *
      * Loads the model.
      */
     public function loadModel() {
@@ -109,10 +109,10 @@ abstract class Row {
 
     /**
      * Magic set method.
-     * 
-     * Sets the Row's keys to the given value, or store them on the side 
+     *
+     * Sets the Row's keys to the given value, or store them on the side
      * if they represent a has-* relation.
-     * 
+     *
      * @param mixed $name
      * @param mixed $value
      */
@@ -125,9 +125,9 @@ abstract class Row {
 
     /**
      * Magic get method.
-     * 
+     *
      * Lazily loads the current row's relation, as they are needed.
-     * 
+     *
      * @param mixed $name
      * @return mixed
      * @throws UnknownRelationException
@@ -150,7 +150,7 @@ abstract class Row {
         foreach ($this->model->hasMany as $link => $info) {
             if (ucfirst(strtolower($link)) != ucfirst(strtolower($name)))
                 continue;
-            
+
             $link = strtolower($link);
             $model = getValue($info, 'model', ucfirst($link) . 'Model');
             $reflexModel = new ReflectionClass($model);
@@ -164,9 +164,9 @@ abstract class Row {
 
     /**
      * Magic isset method.
-     * 
+     *
      * Uses magic get method to lazily determine if a field exists.
-     * 
+     *
      * @param mixed $name
      * @return boolean
      */

@@ -22,6 +22,13 @@ class View {
     private $type = self::HTML;
 
     /**
+     * Is this a partial view?
+     *
+     * @var boolean
+     */
+    private $partial = false;
+
+    /**
      * Holds the view variables.
      *
      * @var array
@@ -150,6 +157,7 @@ class View {
      * @param string $type the content-type of the response.
      */
     public function partial($code = 200) {
+    	$this->partial = true;
         header('HTTP/1.1 ' . $this->code($code));
         header('Content-type: ' . $this->type . '; charset=utf-8');
 
@@ -237,6 +245,14 @@ class View {
 
     public function setContentType($string) {
         $this->type = $string;
+    }
+
+    public function getContentType() {
+    	return $this->type;
+    }
+
+    public function isPartial() {
+    	return $this->partial;
     }
 
     /**

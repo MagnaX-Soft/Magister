@@ -1,10 +1,10 @@
 <?php
 
 /**
- * Base Model. 
- * 
- * Includes generic functionality 
- * 
+ * Base Model.
+ *
+ * Includes generic functionality
+ *
  * @package Magister
  * @subpackage Model
  */
@@ -12,62 +12,62 @@ abstract class Model implements Serializable {
 
     /**
      * The DataSource object.
-     * 
-     * @var DataSource 
+     *
+     * @var DataSource
      */
     protected $pdo;
 
     /**
      * The table related to the current Model.
-     * 
-     * @var string 
+     *
+     * @var string
      */
     protected $table;
 
     /**
      * The class associated with single rows of the current Model.
-     * 
-     * @var string 
+     *
+     * @var string
      */
     protected $class;
 
     /**
      * The name of the primary key in the associated table.
-     * 
+     *
      * @var string
      */
     public $primaryKey = 'id';
 
     /**
      * The default order of the rows in the table.
-     * 
-     * @var array 
+     *
+     * @var array
      */
     protected $order = array('id' => 'ASC');
 
     /**
      * The default conditions applied to a query.
-     * 
+     *
      * @var array
      */
     protected $cond = array();
 
     /**
      * An array of has-many table relationships.
-     * @var array 
+     * @var array
      */
     public $hasMany = array();
 
     /**
      * An array of has-one table relationships.
-     * 
-     * @var array 
+     *
+     * @var array
      */
     public $hasOne = array();
 
     /**
      * Model constructor.
-     * 
+     *
      * Connects to the database.
      */
     public function __construct() {
@@ -77,9 +77,9 @@ abstract class Model implements Serializable {
     /**
      * Serialize method.
      *
-     * There are no runtime defined properties in models, therefore, the 
+     * There are no runtime defined properties in models, therefore, the
      * serialized representation is null.
-     * 
+     *
      * @access private
      * @return null
      */
@@ -90,8 +90,8 @@ abstract class Model implements Serializable {
     /**
      * Unserialize method.
      *
-     * Re-connects to the database upon unserialization. 
-     * 
+     * Re-connects to the database upon unserialization.
+     *
      * @access private
      * @param mixed $data
      */
@@ -101,14 +101,14 @@ abstract class Model implements Serializable {
 
     /**
      * Magic __call method.
-     * 
-     * If the called function starts with "getBy", consider it valid and send it 
+     *
+     * If the called function starts with "getBy", consider it valid and send it
      * to Model::getByField().
-     * 
+     *
      * @param string $name
      * @param array $arguments
      * @return Row|bool
-     * @throws UndefinedMethodException 
+     * @throws UndefinedMethodException
      */
     public function __call($name, $arguments) {
         if (strpos($name, 'getBy') !== false)
@@ -121,8 +121,8 @@ abstract class Model implements Serializable {
      * GetTable method.
      *
      * Returns the correct table name.
-     * 
-     * @return string 
+     *
+     * @return string
      */
     public function getTable() {
         if (empty($this->table))
@@ -133,10 +133,10 @@ abstract class Model implements Serializable {
 
     /**
      * GetClass method.
-     * 
+     *
      * Gets the class associated with single rows of current Model.
-     * 
-     * @return string 
+     *
+     * @return string
      */
     public function getClass() {
         if (empty($this->class))
@@ -147,13 +147,13 @@ abstract class Model implements Serializable {
 
     /**
      * Paginate method.
-     * 
+     *
      * Calculates information relative to the pagination of results.
-     * 
+     *
      * @param int $page
      * @param int $limit
      * @param int $count
-     * @return array In order, the current page number, the number of items per 
+     * @return array In order, the current page number, the number of items per
      * page and the last page number
      */
     public function paginate($page = 1, $limit = 25, $count = null) {
@@ -168,7 +168,7 @@ abstract class Model implements Serializable {
 
         if ($page > $last)
             $page = $last;
-        
+
         if ($page < 1)
             $page = 1;
 
@@ -177,10 +177,10 @@ abstract class Model implements Serializable {
 
     /**
      * Magic getByField method.
-     * 
-     * Gets a single record from the model by an arbitrary field. If many 
+     *
+     * Gets a single record from the model by an arbitrary field. If many
      * records match the condition, only the first is returned.
-     * 
+     *
      * @param string $field
      * @param array $params
      * @return Row|bool
@@ -192,12 +192,12 @@ abstract class Model implements Serializable {
         $release = $this->doGet($params, $this->getTable() . '.' . $field . ' = ?', $this->order, 1);
         return $release->fetchObject($this->getClass());
     }
-    
+
     /**
      * GetByPrimaryKey method.
-     * 
+     *
      * Gets a single record from the model by the model's primary key.
-     * 
+     *
      * @uses Model::getByField
      * @param mixed $params
      * @return Row|bool
@@ -208,10 +208,10 @@ abstract class Model implements Serializable {
 
     /**
      * GetAll method.
-     * 
-     * Gets all the rows matching a set of conditions (defaults to no 
+     *
+     * Gets all the rows matching a set of conditions (defaults to no
      * conditions).
-     * 
+     *
      * @param int $start Sets the location of the first record.
      * @param int $limit Limit the number of results returned.
      * @param string|array $cond Query conditions.
@@ -227,23 +227,23 @@ abstract class Model implements Serializable {
 
     /**
      * GetALLCount method.
-     * 
+     *
      * Gets the number of rows matching a set of conditions (defaults to no
      * conditions).
-     * 
+     *
      * @param string|array $cond Query conditions.
      * @param array $params Query parameters.
-     * @return int 
+     * @return int
      */
     public function getAllCount($cond = null, array $params = array()) {
         return $this->doGetCount($params, $cond);
     }
-    
+
     /**
      * getRaw method.
-     * 
+     *
      * Provides RAW sql query functionnality.
-     * 
+     *
      * @param string $sql
      * @param array $params
      * @param boolean $useObject
@@ -251,14 +251,14 @@ abstract class Model implements Serializable {
      */
     public function getRaw($sql, array $params = array(), $useObject = true) {
         return $this->doRaw($sql, $params, $useObject);
-        
+
     }
-    
+
     /**
      * getRawCount method.
-     * 
+     *
      * Provides RAW sql query count functionnality.
-     * 
+     *
      * @param string $sql
      * @param array $params
      * @return int
@@ -269,11 +269,11 @@ abstract class Model implements Serializable {
 
     /**
      * Delete method.
-     * 
+     *
      * Deletes a row in the database.
-     * 
+     *
      * @param Row $row
-     * @return boolean 
+     * @return boolean
      */
     public function delete(Row $row) {
         if ($this->doDel(array($row->{$this->primaryKey}), $this->primaryKey . ' = ?') == 1) {
@@ -285,17 +285,17 @@ abstract class Model implements Serializable {
 
     /**
      * DoGet method.
-     * 
-     * Gets all the columns from $table, accepts $params for prepared 
-     * statements, $cond for conditions, $order for ordering and $limit for 
+     *
+     * Gets all the columns from $table, accepts $params for prepared
+     * statements, $cond for conditions, $order for ordering and $limit for
      * limits.
-     * 
+     *
      * @param array $params
      * @param array|string $cond
      * @param array $order
      * @param int|string $limit
      * @param array|string $select
-     * @return PDOStatement 
+     * @return PDOStatement
      */
     protected function doGet(array $params = null, $cond = null, array $order = array(), $limit = null, $select = array()) {
         $join = array();
@@ -368,9 +368,9 @@ abstract class Model implements Serializable {
 
     /**
      * DoGetCount method.
-     * 
+     *
      * Counts the rows from $table, accepts $params and $cond.
-     * 
+     *
      * @uses Model::doGet()
      * @param array $params
      * @param array|string $cond
@@ -384,12 +384,12 @@ abstract class Model implements Serializable {
 
     /**
      * DoPut method.
-     * 
+     *
      * Inserts a row into the given table.
-     * 
+     *
      * @param array $params
      * @param array $fields
-     * @return bool|PDOStatement 
+     * @return bool|PDOStatement
      */
     protected function doPut(array $params, array $fields) {
         if (count($fields) != count($params))
@@ -410,13 +410,13 @@ abstract class Model implements Serializable {
 
     /**
      * DoUp method.
-     * 
+     *
      * Updates an existing row in the database.
-     * 
+     *
      * @param array $params
      * @param array $fields
-     * @param array|string $cond 
-     * @return bool|PDOStatement 
+     * @param array|string $cond
+     * @return bool|PDOStatement
      */
     protected function doUp(array $params, array $fields, $cond) {
         if ((count($fields) > count($params)) || count($fields) < 1)
@@ -438,12 +438,12 @@ abstract class Model implements Serializable {
 
     /**
      * DoDel method.
-     * 
+     *
      * Deletes a row/group of rows from the database
-     * 
+     *
      * @param array $params
      * @param array|string $cond
-     * @return bool|PDOStatement 
+     * @return bool|PDOStatement
      */
     protected function doDel(array $params, $cond) {
         if (is_string($cond))
@@ -462,19 +462,19 @@ abstract class Model implements Serializable {
 
     /**
      * DoRaw method.
-     * 
+     *
      * Executes a raw SQL query.
-     * 
+     *
      * @param string $sql
      * @param array $params
      * @param boolean $useObject
-     * @return resource 
+     * @return resource
      */
     protected function doRaw($sql, array $params = array(), $useObject = true) {
         $query = $this->pdo->prepare($sql);
         if ($useObject)
             $query->setFetchMode(PDO::FETCH_CLASS, $this->getClass());
-        else 
+        else
             $query->setFetchMode(PDO::FETCH_OBJ);
 
         if (empty($params))
@@ -486,10 +486,10 @@ abstract class Model implements Serializable {
 
     /**
      * DumpQuery method.
-     * 
+     *
      * Returns the list of queries.
-     * 
-     * @return array 
+     *
+     * @return array
      */
     public function dumpQueries() {
         return $this->pdo->queries;

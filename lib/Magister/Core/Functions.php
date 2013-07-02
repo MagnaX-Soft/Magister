@@ -58,6 +58,16 @@ function createHash($string) {
 /**
  * SetFilled function.
  *
+ * @deprecated
+ * @see isSetFilled
+ */
+function setFilled(array $param, array $array) {
+	return isSetFilled($param, $array);
+}
+
+/**
+ * IsSetFilled function.
+ *
  * Returns true if all the keys specified in $array are set and not empty in the
  * $param array. Throws an InvalidArgumentException if a required key is not set
  * in $param.
@@ -67,7 +77,7 @@ function createHash($string) {
  * @return bool
  * @throws InvalidArgumentException
  */
-function setFilled(array $param, array $array) {
+function isSetFilled(array $param, array $array) {
     foreach ($array as $field) {
         if (!isset($param[$field]) || empty($param[$field]))
             throw new InvalidArgumentException(sprintf(__('Required field \'%s\' was not present.', 'magister'), $field));
@@ -82,6 +92,8 @@ function setFilled(array $param, array $array) {
  */
 function run() {
     try {
+    	if (Config::get('mode.debug', false))
+    		list($start,$drop) = explode(" ", microtime());
         Session::start();
         I18n::determineLanguage();
 
@@ -98,6 +110,10 @@ function run() {
 
         $instance = $reflex->newInstance($route->getParameters(), $target);
         $instance->{$target['action']}();
+    	if (Config::get('mode.debug', false) && View::getInstance()->getContentType() == View::HTML && !View::getInstance()->isPartial()) {
+    		list($end,$drop) = explode(" ", microtime());
+    		echo '<div class="container right" style="margin: 5px;">Processing time: ' . ($end - $start) . 's</div>';
+    	}
     } catch (RoutingException $e) {
         View::getInstance()->renderError($e, null, '404');
     } catch (Exception $e) {
@@ -131,6 +147,17 @@ function compat_strstr($haystack, $needle, $before_needle = false) {
 }
 
 /**
+ * Recursively apply stripslashes to an array.
+ *
+ * @access private
+ * @param mixed $value
+ * @return string
+ */
+function stripslashes_deep($value) {
+	return is_array($value) ? array_map('stripslashes_deep', $value) : stripslashes($value);
+}
+
+/**
  * GetValue function.
  *
  * Returns the value of the specified key or default is the key is not defined.
@@ -142,7 +169,7 @@ function compat_strstr($haystack, $needle, $before_needle = false) {
  * otherwise.
  */
 function getValue(array $array, $key, $default = '') {
-    return (isset($array[$key])) ? stripslashes($array[$key]) : $default;
+    return (isset($array[$key])) ? stripslashes_deep($array[$key]) : $default;
 }
 
 /**
@@ -156,6 +183,10 @@ function __($string, $domain = APP) {
     return I18n::translate($string, $domain);
 }
 
+function __n($singular, $plural, $number, $domain = APP) {
+	return I18n::translate(array($singular, $plural, $number), $domain);
+}
+
 /**
  * Translates and prints the given string in the given domain.
  *
@@ -164,6 +195,10 @@ function __($string, $domain = APP) {
  */
 function __e($string, $domain = APP) {
     echo I18n::translate($string, $domain);
+}
+
+function __ne($singular, $plural, $number, $domain = APP) {
+	echo I18n::translate(array($singular, $plural, $number), $domain);
 }
 
 /**

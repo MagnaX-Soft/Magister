@@ -32,11 +32,11 @@ class Config {
     /**
      * Get function.
      *
-     * If $strict is true, throws an UnknownConfigurationException when the key 
+     * If $strict is true, throws an UnknownConfigurationException when the key
      * has not been defined. If $strict is false, returns $default.
      *
      * @param string $key
-     * @param boolean $strict
+     * @param boolean $strict defaults to true
      * @param mixed $default
      * @return mixed
      */
@@ -48,11 +48,11 @@ class Config {
 
         return self::$data[$key];
     }
-    
+
     public static function exists($key) {
         return array_key_exists($key, self::$data);
     }
-    
+
     /**
      * NotEmpty function.
      *
