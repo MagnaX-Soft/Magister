@@ -10,489 +10,513 @@
  */
 abstract class Model implements Serializable {
 
-    /**
-     * The DataSource object.
-     *
-     * @var DataSource
-     */
-    protected $pdo;
+	/**
+	 * The DataSource object.
+	 *
+	 * @var DataSource
+	 */
+	protected $pdo;
 
-    /**
-     * The table related to the current Model.
-     *
-     * @var string
-     */
-    protected $table;
+	/**
+	 * The table related to the current Model.
+	 *
+	 * @var string
+	 */
+	protected $table;
 
-    /**
-     * The class associated with single rows of the current Model.
-     *
-     * @var string
-     */
-    protected $class;
+	/**
+	 * The class associated with single rows of the current Model.
+	 *
+	 * @var string
+	 */
+	protected $class;
 
-    /**
-     * The name of the primary key in the associated table.
-     *
-     * @var string
-     */
-    public $primaryKey = 'id';
+	/**
+	 * The name of the primary key in the associated table.
+	 *
+	 * @var string
+	 */
+	public $primaryKey = 'id';
 
-    /**
-     * The default order of the rows in the table.
-     *
-     * @var array
-     */
-    protected $order = array('id' => 'ASC');
+	/**
+	 * The default order of the rows in the table.
+	 *
+	 * @var array
+	 */
+	protected $order = array('id' => 'ASC');
 
-    /**
-     * The default conditions applied to a query.
-     *
-     * @var array
-     */
-    protected $cond = array();
+	/**
+	 * Disables ordering in SQL queries.
+	 * 
+	 * @var boolean
+	 */
+	protected $noOrder = false;
 
-    /**
-     * An array of has-many table relationships.
-     * @var array
-     */
-    public $hasMany = array();
+	/**
+	 * The default conditions applied to a query.
+	 *
+	 * @var array
+	 */
+	protected $cond = array();
 
-    /**
-     * An array of has-one table relationships.
-     *
-     * @var array
-     */
-    public $hasOne = array();
+	/**
+	 * An array of has-many table relationships.
+	 * @var array
+	 */
+	public $hasMany = array();
 
-    /**
-     * Model constructor.
-     *
-     * Connects to the database.
-     */
-    public function __construct() {
-        $this->pdo = DB::getDataSource();
-    }
+	/**
+	 * An array of has-one table relationships.
+	 *
+	 * @var array
+	 */
+	public $hasOne = array();
 
-    /**
-     * Serialize method.
-     *
-     * There are no runtime defined properties in models, therefore, the
-     * serialized representation is null.
-     *
-     * @access private
-     * @return null
-     */
-    public function serialize() {
-        return null;
-    }
+	/**
+	 * Model constructor.
+	 *
+	 * Connects to the database.
+	 */
+	public function __construct() {
+		$this->pdo = DB::getDataSource();
+	}
 
-    /**
-     * Unserialize method.
-     *
-     * Re-connects to the database upon unserialization.
-     *
-     * @access private
-     * @param mixed $data
-     */
-    public function unserialize($data) {
-        $this->__construct();
-    }
+	/**
+	 * Serialize method.
+	 *
+	 * There are no runtime defined properties in models, therefore, the
+	 * serialized representation is null.
+	 *
+	 * @access private
+	 * @return null
+	 */
+	public function serialize() {
+		return null;
+	}
 
-    /**
-     * Magic __call method.
-     *
-     * If the called function starts with "getBy", consider it valid and send it
-     * to Model::getByField().
-     *
-     * @param string $name
-     * @param array $arguments
-     * @return Row|bool
-     * @throws UndefinedMethodException
-     */
-    public function __call($name, $arguments) {
-        if (strpos($name, 'getBy') !== false)
-            return $this->getByField(strtolower(substr($name, 5)), $arguments);
+	/**
+	 * Unserialize method.
+	 *
+	 * Re-connects to the database upon unserialization.
+	 *
+	 * @access private
+	 * @param mixed $data
+	 */
+	public function unserialize($data) {
+		$this->__construct();
+	}
 
-        throw new UndefinedMethodException('No method matches ' . get_class($this) . '::' . $name . '()');
-    }
+	/**
+	 * Magic __call method.
+	 *
+	 * If the called function starts with "getBy", consider it valid and send it
+	 * to Model::getByField().
+	 *
+	 * @param string $name
+	 * @param array $arguments
+	 * @return Row|bool
+	 * @throws UndefinedMethodException
+	 */
+	public function __call($name, $arguments) {
+		if (strpos($name, 'getBy') !== false)
+			return $this->getByField(strtolower(substr($name, 5)), $arguments);
 
-    /**
-     * GetTable method.
-     *
-     * Returns the correct table name.
-     *
-     * @return string
-     */
-    public function getTable() {
-        if (empty($this->table))
-            $this->table = strtolower(substr(get_class($this), 0, -5));
+		throw new UndefinedMethodException('No method matches ' . get_class($this) . '::' . $name . '()');
+	}
 
-        return (Config::notEmpty('DB.prefix', false)) ? Config::get('DB.prefix') . '_' . $this->table : $this->table;
-    }
+	/**
+	 * GetTable method.
+	 *
+	 * Returns the correct table name.
+	 *
+	 * @return string
+	 */
+	public function getTable() {
+		if (empty($this->table)) {
+			$pieces = array_reverse(preg_split('/(?=[A-Z])/', substr(get_class($this), 0, -5)));
+			array_pop($pieces);
+			$this->table = strtolower(implode('_', $pieces));
+		}
 
-    /**
-     * GetClass method.
-     *
-     * Gets the class associated with single rows of current Model.
-     *
-     * @return string
-     */
-    public function getClass() {
-        if (empty($this->class))
-            $this->class = ucfirst(Inflect::singularize(substr(get_class($this), 0, -5)));
+		return (Config::notEmpty('DB.prefix', false)) ? Config::get('DB.prefix') . '_' . $this->table : $this->table;
+	}
 
-        return $this->class;
-    }
+	/**
+	 * GetClass method.
+	 *
+	 * Gets the class associated with single rows of current Model.
+	 *
+	 * @return string
+	 */
+	public function getClass() {
+		if (empty($this->class))
+			$this->class = ucfirst(Inflect::singularize(substr(get_class($this), 0, -5)));
 
-    /**
-     * Paginate method.
-     *
-     * Calculates information relative to the pagination of results.
-     *
-     * @param int $page
-     * @param int $limit
-     * @param int $count
-     * @return array In order, the current page number, the number of items per
-     * page and the last page number
-     */
-    public function paginate($page = 1, $limit = 25, $count = null) {
-        if (isset($_GET['page']) && is_numeric($_GET['page']) && $_GET['page'] > 0)
-            $page = (int) $_GET['page'];
-        if (isset($_GET['limit']) && is_numeric($_GET['limit']) && $_GET['limit'] > 0)
-            $limit = (int) $_GET['limit'];
-        if (null === $count)
-            $count = $this->getAllCount();
+		return $this->class;
+	}
 
-        $last = (int) ceil($count / $limit);
+	/**
+	 * Paginate method.
+	 *
+	 * Calculates information relative to the pagination of results.
+	 *
+	 * @param int $page
+	 * @param int $limit
+	 * @param int $count
+	 * @return array In order, the current page number, the number of items per
+	 * page and the last page number
+	 */
+	public function paginate($page = 1, $limit = 25, $count = null) {
+		if (isset($_GET['page']) && is_numeric($_GET['page']) && $_GET['page'] > 0)
+			$page = (int) $_GET['page'];
+		if (isset($_GET['limit']) && is_numeric($_GET['limit']) && $_GET['limit'] > 0)
+			$limit = (int) $_GET['limit'];
+		if (null === $count)
+			$count = $this->getAllCount();
 
-        if ($page > $last)
-            $page = $last;
+		$last = (int) ceil($count / $limit);
 
-        if ($page < 1)
-            $page = 1;
+		if ($page > $last)
+			$page = $last;
 
-        return array($page, $limit, $last);
-    }
+		if ($page < 1)
+			$page = 1;
 
-    /**
-     * Magic getByField method.
-     *
-     * Gets a single record from the model by an arbitrary field. If many
-     * records match the condition, only the first is returned.
-     *
-     * @param string $field
-     * @param array $params
-     * @return Row|bool
-     */
-    protected function getByField($field, array $params) {
-        if ($this->doGetCount($params, $this->getTable() . '.' . $field . ' = ?') == 0)
-            return false;
+		return array($page, $limit, $last);
+	}
 
-        $release = $this->doGet($params, $this->getTable() . '.' . $field . ' = ?', $this->order, 1);
-        return $release->fetchObject($this->getClass());
-    }
+	/**
+	 * Magic getByField method.
+	 *
+	 * Gets a single record from the model by an arbitrary field. If many
+	 * records match the condition, only the first is returned.
+	 *
+	 * @param string $field
+	 * @param array $params
+	 * @return Row|bool
+	 */
+	protected function getByField($field, array $params) {
+		if ($this->doGetCount($params, $this->getTable() . '.' . $field . ' = ?') == 0)
+			return false;
 
-    /**
-     * GetByPrimaryKey method.
-     *
-     * Gets a single record from the model by the model's primary key.
-     *
-     * @uses Model::getByField
-     * @param mixed $params
-     * @return Row|bool
-     */
-    public function getByPrimaryKey($params) {
-        return $this->getByField($this->primaryKey, array($params));
-    }
+		$release = $this->doGet($params, $this->getTable() . '.' . $field . ' = ?', $this->order, 1);
+		return $release->fetchObject($this->getClass());
+	}
 
-    /**
-     * GetAll method.
-     *
-     * Gets all the rows matching a set of conditions (defaults to no
-     * conditions).
-     *
-     * @param int $start Sets the location of the first record.
-     * @param int $limit Limit the number of results returned.
-     * @param string|array $cond Query conditions.
-     * @param array $params Query parameters.
-     * @return PDOStatement
-     */
-    public function getAll($start = 0, $limit = 20, $cond = null, array $params = array()) {
-        if (null === $start)
-            return $this->doGet($params, $cond, $this->order);
-        else
-            return $this->doGet($params, $cond, $this->order, (int) $start . ', ' . (int) $limit);
-    }
+	/**
+	 * GetByPrimaryKey method.
+	 *
+	 * Gets a single record from the model by the model's primary key.
+	 *
+	 * @uses Model::getByField
+	 * @param mixed $params
+	 * @return Row|bool
+	 */
+	public function getByPrimaryKey($params) {
+		return $this->getByField($this->primaryKey, array($params));
+	}
 
-    /**
-     * GetALLCount method.
-     *
-     * Gets the number of rows matching a set of conditions (defaults to no
-     * conditions).
-     *
-     * @param string|array $cond Query conditions.
-     * @param array $params Query parameters.
-     * @return int
-     */
-    public function getAllCount($cond = null, array $params = array()) {
-        return $this->doGetCount($params, $cond);
-    }
+	/**
+	 * GetAll method.
+	 *
+	 * Gets all the rows matching a set of conditions (defaults to no
+	 * conditions).
+	 *
+	 * @param int $start Sets the location of the first record.
+	 * @param int $limit Limit the number of results returned.
+	 * @param string|array $cond Query conditions.
+	 * @param array $params Query parameters.
+	 * @return PDOStatement
+	 */
+	public function getAll($start = 0, $limit = 20, $cond = null, array $params = array()) {
+		if (null === $start)
+			return $this->doGet($params, $cond, $this->order);
+		else
+			return $this->doGet($params, $cond, $this->order, (int) $start . ', ' . (int) $limit);
+	}
 
-    /**
-     * getRaw method.
-     *
-     * Provides RAW sql query functionnality.
-     *
-     * @param string $sql
-     * @param array $params
-     * @param boolean $useObject
-     * @return PDOStatement
-     */
-    public function getRaw($sql, array $params = array(), $useObject = true) {
-        return $this->doRaw($sql, $params, $useObject);
+	/**
+	 * GetALLCount method.
+	 *
+	 * Gets the number of rows matching a set of conditions (defaults to no
+	 * conditions).
+	 *
+	 * @param string|array $cond Query conditions.
+	 * @param array $params Query parameters.
+	 * @return int
+	 */
+	public function getAllCount($cond = null, array $params = array()) {
+		return $this->doGetCount($params, $cond);
+	}
 
-    }
+	/**
+	 * getRaw method.
+	 *
+	 * Provides RAW sql query functionnality.
+	 *
+	 * @param string $sql
+	 * @param array $params
+	 * @param boolean $useObject
+	 * @return PDOStatement
+	 */
+	public function getRaw($sql, array $params = array(), $useObject = true) {
+		return $this->doRaw($sql, $params, $useObject);
 
-    /**
-     * getRawCount method.
-     *
-     * Provides RAW sql query count functionnality.
-     *
-     * @param string $sql
-     * @param array $params
-     * @return int
-     */
-    public function getRawCount($sql, array $params = array()) {
-        return (int) $this->doRaw($sql, $params)->fetchColumn();
-    }
+	}
 
-    /**
-     * Delete method.
-     *
-     * Deletes a row in the database.
-     *
-     * @param Row $row
-     * @return boolean
-     */
-    public function delete(Row $row) {
-        if ($this->doDel(array($row->{$this->primaryKey}), $this->primaryKey . ' = ?') == 1) {
-            return true;
-        }
-        $row->error = $this->pdo->errorInfo();
-        return false;
-    }
+	/**
+	 * getRawCount method.
+	 *
+	 * Provides RAW sql query count functionnality.
+	 *
+	 * @param string $sql
+	 * @param array $params
+	 * @return int
+	 */
+	public function getRawCount($sql, array $params = array()) {
+		return (int) $this->doRaw($sql, $params)->fetchColumn();
+	}
 
-    /**
-     * DoGet method.
-     *
-     * Gets all the columns from $table, accepts $params for prepared
-     * statements, $cond for conditions, $order for ordering and $limit for
-     * limits.
-     *
-     * @param array $params
-     * @param array|string $cond
-     * @param array $order
-     * @param int|string $limit
-     * @param array|string $select
-     * @return PDOStatement
-     */
-    protected function doGet(array $params = null, $cond = null, array $order = array(), $limit = null, $select = array()) {
-        $join = array();
+	/**
+	 * Delete method.
+	 *
+	 * Deletes a row in the database.
+	 *
+	 * @param Row $row
+	 * @return boolean
+	 */
+	public function delete(Row $row) {
+		if ($this->doDel(array($row->{$this->primaryKey}), $this->primaryKey . ' = ?') === true) {
+			return true;
+		}
+		$row->error = $this->pdo->errorInfo();
+		return false;
+	}
 
-        $sql = 'SELECT ';
+	/**
+	 * GenerateSelectArray method.
+	 *
+	 * Generates the string that is used to select data from the database.
+	 * 
+	 * @return array[2] array[0] is the select elements, array[1] is the joins to apply
+	 */
+	protected function generateSelectArray() {
+		$join = $select = array();
+		foreach ($this->doRaw('DESCRIBE ' . $this->getTable())->fetchAll(PDO::FETCH_COLUMN) as $key) {
+			if (array_key_exists($key, $this->hasOne)) {
+				$field = compat_strstr($key, '_', true);
+				$name = getValue($this->hasOne[$key], 'name', ucfirst($field));
+				$model = getValue($this->hasOne[$key], 'model', ucfirst(Inflect::pluralize($field)) . 'Model');
+				$modelObject = new $model;
+				$table = $modelObject->getTable();
+				$pk = $modelObject->primaryKey;
+				$join[$table . ' AS ' . $table . '_' . $key][] = $this->getTable() . '.' . $key . ' = ' . $table . '_' . $key . '.' . $pk;
+				$select[] = $table . '_' . $key . '.' . $pk . ' AS ' . $name . '_' . $pk;
+			} else
+			$select[] = $this->getTable() . '.' . $key;
+		}
+		return array($select, $join);
+	}
 
-        if (is_string($select) && $select != '*')
-            $select = array($select);
-        elseif ((is_string($select) && $select == '*') || empty($select)) {
-            $select = array('*');
-            if (!empty($this->hasOne)) {
-                $select = array();
-                foreach ($this->doRaw('DESCRIBE ' . $this->getTable())->fetchAll(PDO::FETCH_COLUMN) as $key) {
-                    if (array_key_exists($key, $this->hasOne)) {
-                        $field = compat_strstr($key, '_', true);
-                        $name = getValue($this->hasOne[$key], 'name', ucfirst($field));
-                        $model = getValue($this->hasOne[$key], 'model', ucfirst(Inflect::pluralize($field)) . 'Model');
-                        $modelObject = new $model;
-                        $table = $modelObject->getTable();
-                        $pk = $modelObject->primaryKey;
-                        $join[$table . ' AS ' . $table . '_' . $key][] = $this->getTable() . '.' . $key . ' = ' . $table . '_' . $key . '.' . $pk;
-                        $select[] = $table . '_' . $key . '.' . $pk . ' AS ' . $name . '_' . $pk;
-                    } else
-                        $select[] = $this->getTable() . '.' . $key;
-                }
-            }
-        } elseif (!is_array($select))
-            return false;
+	/**
+	 * DoGet method.
+	 *
+	 * Gets all the columns from $table, accepts $params for prepared
+	 * statements, $cond for conditions, $order for ordering and $limit for
+	 * limits.
+	 *
+	 * @param array $params
+	 * @param array|string $cond
+	 * @param array $order
+	 * @param int|string $limit
+	 * @param array|string $select
+	 * @return PDOStatement
+	 */
+	protected function doGet(array $params = null, $cond = null, array $order = null, $limit = null, $select = array(), array $join = array(), array $virtualOrder = array()) {
+		$sql = 'SELECT ';
 
-        $sql .= implode(', ', $select) . ' FROM ' . $this->getTable();
+		if (is_string($select) && $select != '*')
+			$select = array($select);
+		elseif ((is_string($select) && $select == '*') || empty($select)) {
+			$select = array('*');
+			if (!empty($this->hasOne)) {
+				list($select, $join) = $this->generateSelectArray();
+			}
+		} elseif (!is_array($select))
+		return false;
 
-        if (!empty($join)) {
-            foreach ($join as $table => $on) {
-                $sql .= ' LEFT JOIN ' . $table . ' ON (' . implode(' AND ', $on) . ')';
-            }
-        }
+		$sql .= implode(', ', $select) . ' FROM ' . $this->getTable();
 
-        if (empty($cond))
-            $cond = $this->cond;
+		if (!empty($join)) {
+			foreach ($join as $table => $on) {
+				$sql .= ' LEFT JOIN ' . $table . ' ON (' . implode(' AND ', $on) . ')';
+			}
+		}
 
-        if (!empty($cond)) {
-            if (is_string($cond))
-                $cond = array($cond);
-            elseif (!is_array($cond))
-                return false;
+		if (empty($cond))
+			$cond = $this->cond;
 
-            $sql .= ' WHERE ' . implode(' AND ', $cond);
-        }
+		if (!empty($cond)) {
+			if (is_string($cond))
+				$cond = array($cond);
+			elseif (!is_array($cond))
+				return false;
 
-        if (empty($order))
-            $order = $this->order;
+			$sql .= ' WHERE ' . implode(' AND ', $cond);
+		}
 
-        $sql .= ' ORDER BY ';
-        $orderStrings = array();
-        foreach ($order as $field => $dir)
-            $orderStrings[] = $this->getTable() . '.' . $field . ' ' . strtoupper($dir);
-        $sql .= implode(', ', $orderStrings);
+		if ($this->noOrder != true) {
+			if (empty($order) && empty($virtualOrder))
+				$order = $this->order;
 
-        if (null !== $limit)
-            $sql .= ' LIMIT ' . $limit;
+			$sql .= ' ORDER BY ';
+			$orderStrings = array();
+			foreach ($order as $field => $dir)
+				$orderStrings[] = $this->getTable() . '.' . $field . ' ' . strtoupper($dir);
+			foreach ($virtualOrder as $field => $dir)
+				$orderStrings[] = $field . ' ' . strtoupper($dir);
+			$sql .= implode(', ', $orderStrings);
+		}
 
-        $query = $this->pdo->prepare($sql);
-        $query->setFetchMode(PDO::FETCH_CLASS, $this->getClass());
-        if (null === $params)
-            $query->execute();
-        else
-            $query->execute($params);
-        return $query;
-    }
+		if (null !== $limit)
+			$sql .= ' LIMIT ' . $limit;
 
-    /**
-     * DoGetCount method.
-     *
-     * Counts the rows from $table, accepts $params and $cond.
-     *
-     * @uses Model::doGet()
-     * @param array $params
-     * @param array|string $cond
-     * @return int
-     */
-    protected function doGetCount(array $params = null, $cond = null) {
-        if (empty($cond))
-            $cond = $this->cond;
-        return (int) $this->doGet($params, $cond, array(), null, 'COUNT(*)')->fetchColumn();
-    }
+		$query = $this->pdo->prepare($sql);
+		$query->setFetchMode(PDO::FETCH_CLASS, $this->getClass());
+		if (null === $params)
+			$query->execute();
+		else
+			$query->execute($params);
+		return $query;
+	}
 
-    /**
-     * DoPut method.
-     *
-     * Inserts a row into the given table.
-     *
-     * @param array $params
-     * @param array $fields
-     * @return bool|PDOStatement
-     */
-    protected function doPut(array $params, array $fields) {
-        if (count($fields) != count($params))
-            return false;
+	/**
+	 * DoGetCount method.
+	 *
+	 * Counts the rows from $table, accepts $params and $cond.
+	 *
+	 * @uses Model::doGet()
+	 * @param array $params
+	 * @param array|string $cond
+	 * @return int
+	 */
+	protected function doGetCount(array $params = null, $cond = null) {
+		if (empty($cond))
+			$cond = $this->cond;
+		return (int) $this->doGet($params, $cond, array(), null, 'COUNT(*)')->fetchColumn();
+	}
 
-        $values = array();
-        for ($i = 0; $i < count($fields); $i++) {
-            $values[] = '?';
-        }
-        $sql = 'INSERT INTO ' . $this->getTable() . '(' . implode(', ', $fields) . ') VALUES (' . implode(', ', $values) . ')';
+	/**
+	 * DoPut method.
+	 *
+	 * Inserts a row into the given table.
+	 *
+	 * @param array $params
+	 * @param array $fields
+	 * @return bool|PDOStatement
+	 */
+	protected function doPut(array $params, array $fields) {
+		if (count($fields) != count($params))
+			return false;
 
-        $query = $this->pdo->prepare($sql);
-        if ($query->execute($params) === true)
-            return true;
-        else
-            return $query;
-    }
+		$values = array();
+		for ($i = 0; $i < count($fields); $i++) {
+			$values[] = '?';
+		}
+		$sql = 'INSERT INTO ' . $this->getTable() . '(' . implode(', ', $fields) . ') VALUES (' . implode(', ', $values) . ')';
 
-    /**
-     * DoUp method.
-     *
-     * Updates an existing row in the database.
-     *
-     * @param array $params
-     * @param array $fields
-     * @param array|string $cond
-     * @return bool|PDOStatement
-     */
-    protected function doUp(array $params, array $fields, $cond) {
-        if ((count($fields) > count($params)) || count($fields) < 1)
-            return false;
+		$query = $this->pdo->prepare($sql);
+		if ($query->execute($params) === true)
+			return true;
+		else
+			return $query;
+	}
 
-        if (is_string($cond))
-            $cond = array($cond);
-        elseif (!is_array($cond))
-            return false;
+	/**
+	 * DoUp method.
+	 *
+	 * Updates an existing row in the database.
+	 *
+	 * @param array $params
+	 * @param array $fields
+	 * @param array|string $cond
+	 * @return bool|PDOStatement
+	 */
+	protected function doUp(array $params, array $fields, $cond) {
+		if ((count($fields) > count($params)) || count($fields) < 1)
+			return false;
 
-        $sql = 'UPDATE ' . $this->getTable() . ' SET ' . implode(' = ? , ', $fields) . ' = ?  WHERE ' . implode(' AND ', $cond);
+		if (is_string($cond))
+			$cond = array($cond);
+		elseif (!is_array($cond))
+			return false;
 
-        $query = $this->pdo->prepare($sql);
-        if (true === $query->execute($params))
-            return true;
-        else
-            return $query;
-    }
+		$sql = 'UPDATE ' . $this->getTable() . ' SET ' . implode(' = ? , ', $fields) . ' = ?  WHERE ' . implode(' AND ', $cond);
 
-    /**
-     * DoDel method.
-     *
-     * Deletes a row/group of rows from the database
-     *
-     * @param array $params
-     * @param array|string $cond
-     * @return bool|PDOStatement
-     */
-    protected function doDel(array $params, $cond) {
-        if (is_string($cond))
-            $cond = array($cond);
-        elseif (!is_array($cond))
-            return false;
+		$query = $this->pdo->prepare($sql);
+		if (true === $query->execute($params))
+			return true;
+		else
+			return $query;
+	}
 
-        $sql = 'DELETE FROM ' . $this->getTable() . ' WHERE ' . implode(' AND ', $cond);
+	/**
+	 * DoDel method.
+	 *
+	 * Deletes a row/group of rows from the database
+	 *
+	 * @param array $params
+	 * @param array|string $cond
+	 * @return bool|PDOStatement
+	 */
+	protected function doDel(array $params, $cond) {
+		if (is_string($cond))
+			$cond = array($cond);
+		elseif (!is_array($cond))
+			return false;
 
-        $query = $this->pdo->prepare($sql);
-        if ($query->execute($params) === true)
-            return true;
-        else
-            return $query;
-    }
+		$sql = 'DELETE FROM ' . $this->getTable() . ' WHERE ' . implode(' AND ', $cond);
 
-    /**
-     * DoRaw method.
-     *
-     * Executes a raw SQL query.
-     *
-     * @param string $sql
-     * @param array $params
-     * @param boolean $useObject
-     * @return resource
-     */
-    protected function doRaw($sql, array $params = array(), $useObject = true) {
-        $query = $this->pdo->prepare($sql);
-        if ($useObject)
-            $query->setFetchMode(PDO::FETCH_CLASS, $this->getClass());
-        else
-            $query->setFetchMode(PDO::FETCH_OBJ);
+		$query = $this->pdo->prepare($sql);
+		if ($query->execute($params) === true)
+			return true;
+		else
+			return $query;
+	}
 
-        if (empty($params))
-            $query->execute();
-        else
-            $query->execute($params);
-        return $query;
-    }
+	/**
+	 * DoRaw method.
+	 *
+	 * Executes a raw SQL query.
+	 *
+	 * @param string $sql
+	 * @param array $params
+	 * @param boolean $useObject
+	 * @return resource
+	 */
+	protected function doRaw($sql, array $params = array(), $useObject = true) {
+		$query = $this->pdo->prepare($sql);
+		if ($useObject)
+			$query->setFetchMode(PDO::FETCH_CLASS, $this->getClass());
+		else
+			$query->setFetchMode(PDO::FETCH_OBJ);
 
-    /**
-     * DumpQuery method.
-     *
-     * Returns the list of queries.
-     *
-     * @return array
-     */
-    public function dumpQueries() {
-        return $this->pdo->queries;
-    }
+		if (empty($params))
+			$query->execute();
+		else
+			$query->execute($params);
+		return $query;
+	}
+
+	/**
+	 * DumpQuery method.
+	 *
+	 * Returns the list of queries.
+	 *
+	 * @return array
+	 */
+	public function dumpQueries() {
+		return $this->pdo->queries;
+	}
 
 }

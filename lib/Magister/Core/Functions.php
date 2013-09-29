@@ -24,7 +24,7 @@ register_shutdown_function('fatalErrorShutdownHandler');
  * @throws ErrorException
  */
 function errorToExceptionHandler($errno, $errstr, $errfile, $errline) {
-    throw new ErrorException($errstr, $errno, 0, $errfile, $errline);
+	throw new ErrorException($errstr, $errno, 0, $errfile, $errline);
 }
 
 /**
@@ -34,12 +34,12 @@ function errorToExceptionHandler($errno, $errstr, $errfile, $errline) {
  * triggered by a fatal error.
  */
 function fatalErrorShutdownHandler() {
-    $last_error = error_get_last();
-    if ($last_error['type'] === E_ERROR) {
-        // fatal error
-        $errorException = new ErrorException($last_error['message'], 1, 0, $last_error['file'], $last_error['line']);
-        View::getInstance()->renderError($errorException);
-    }
+	$last_error = error_get_last();
+	if ($last_error['type'] === E_ERROR) {
+		$errorException = new ErrorException($last_error['message'], 1, 0, $last_error['file'], $last_error['line']);
+
+		View::getInstance()->renderError($errorException);
+	}
 }
 
 /**
@@ -51,8 +51,8 @@ function fatalErrorShutdownHandler() {
  * @return string The hashed password.
  */
 function createHash($string) {
-    $string .= Config::get('security.hash.password');
-    return md5(sha1(sha1(md5(sha1(md5(sha1(md5(sha1(sha1(sha1(md5(sha1(md5(md5(md5(sha1(md5(sha1(md5(sha1(sha1(sha1(sha1(md5(sha1(md5(md5(sha1(md5($string))))))))))))))))))))))))))))));
+	$string .= Config::get('security.hash.password');
+	return md5(sha1(sha1(md5(sha1(md5(sha1(md5(sha1(sha1(sha1(md5(sha1(md5(md5(md5(sha1(md5(sha1(md5(sha1(sha1(sha1(sha1(md5(sha1(md5(md5(sha1(md5($string))))))))))))))))))))))))))))));
 }
 
 /**
@@ -78,11 +78,11 @@ function setFilled(array $param, array $array) {
  * @throws InvalidArgumentException
  */
 function isSetFilled(array $param, array $array) {
-    foreach ($array as $field) {
-        if (!isset($param[$field]) || empty($param[$field]))
-            throw new InvalidArgumentException(sprintf(__('Required field \'%s\' was not present.', 'magister'), $field));
-    }
-    return true;
+	foreach ($array as $field) {
+		if (!isset($param[$field]) || empty($param[$field]))
+			throw new InvalidArgumentException(sprintf(__('Required field \'%s\' was not present.', 'magister'), $field));
+	}
+	return true;
 }
 
 /**
@@ -91,34 +91,47 @@ function isSetFilled(array $param, array $array) {
  * Processes the current request and dispatches the correct action.
  */
 function run() {
-    try {
-    	if (Config::get('mode.debug', false))
-    		list($start,$drop) = explode(" ", microtime());
-        Session::start();
-        I18n::determineLanguage();
+	try {
+		if (Config::get('mode.debug', false))
+			list($start,$drop) = explode(" ", microtime());
+		Session::start();
+		if (false !== Config::get('I18n.determineCustom', false, false)) {
+			$i18n = Config::get('I18n.determineCustom');
+			call_user_func($i18n);
+		} else
+		I18n::determineLanguage();
+		if (false !== Config::get('session.setup.prerouting', false, false)) {
+			$setup = Config::get('session.setup.prerouting');
+			call_user_func($setup);
+		}
 
-        Router::getInstance()->setBasePath(Config::get('routing.basePath'));
-        $route = Router::getInstance()->matchCurrentRequest();
+		Router::getInstance()->setBasePath(Config::get('routing.basePath'));
+		$route = Router::getInstance()->matchCurrentRequest();
 
-        $target = $route->getTarget();
-        $target['model'] = $target['controller'] . 'Model';
-        $target['controller'] .= 'Controller';
+		if (false !== Config::get('session.setup.postrouting', false, false)) {
+			$setup = Config::get('session.setup.postrouting');
+			call_user_func($setup);
+		}
 
-        $reflex = new ReflectionClass($target['controller']);
-        if (!$reflex->hasMethod($target['action']))
-            throw new RoutingException(sprintf(__("Controller '%s' has no '%s' action.", 'magister'), $target['controller'], $target['action']));
+		$target = $route->getTarget();
+		$target['model'] = $target['controller'] . 'Model';
+		$target['controller'] .= 'Controller';
 
-        $instance = $reflex->newInstance($route->getParameters(), $target);
-        $instance->{$target['action']}();
-    	if (Config::get('mode.debug', false) && View::getInstance()->getContentType() == View::HTML && !View::getInstance()->isPartial()) {
-    		list($end,$drop) = explode(" ", microtime());
-    		echo '<div class="container right" style="margin: 5px;">Processing time: ' . ($end - $start) . 's</div>';
-    	}
-    } catch (RoutingException $e) {
-        View::getInstance()->renderError($e, null, '404');
-    } catch (Exception $e) {
-        View::getInstance()->renderError($e);
-    }
+		$reflex = new ReflectionClass($target['controller']);
+		if (!$reflex->hasMethod($target['action']))
+			throw new RoutingException(sprintf(__("Controller '%s' has no '%s' action.", 'magister'), $target['controller'], $target['action']));
+
+		$instance = $reflex->newInstance($route->getParameters(), $target);
+		$instance->{$target['action']}();
+		if (Config::get('mode.debug', false) && View::getInstance()->getContentType() == View::HTML && !View::getInstance()->isPartial()) {
+			list($end,$drop) = explode(" ", microtime());
+			echo '<div class="container right" style="margin: 5px;">Processing time: ' . ($end - $start) . 's</div>';
+		}
+	} catch (RoutingException $e) {
+		View::getInstance()->renderError($e, null, '404');
+	} catch (Exception $e) {
+		View::getInstance()->renderError($e);
+	}
 }
 
 /**
@@ -135,15 +148,15 @@ function run() {
  * found.
  */
 function compat_strstr($haystack, $needle, $before_needle = false) {
-    if (Config::get('mode.compatibility')) {
-        if ($before_needle) {
-            if (strpos($haystack, $needle) === false)
-                return false;
-            return substr($haystack, 0, strpos($haystack, $needle));
-        }
-        return strstr($haystack, $needle);
-    } else
-        return strstr($haystack, $needle, $before_needle);
+	if (Config::get('mode.compatibility')) {
+		if ($before_needle) {
+			if (strpos($haystack, $needle) === false)
+				return false;
+			return substr($haystack, 0, strpos($haystack, $needle));
+		}
+		return strstr($haystack, $needle);
+	} else
+	return strstr($haystack, $needle, $before_needle);
 }
 
 /**
@@ -154,6 +167,9 @@ function compat_strstr($haystack, $needle, $before_needle = false) {
  * @return string
  */
 function stripslashes_deep($value) {
+	if (is_object($value))
+		return $value;
+
 	return is_array($value) ? array_map('stripslashes_deep', $value) : stripslashes($value);
 }
 
@@ -169,7 +185,7 @@ function stripslashes_deep($value) {
  * otherwise.
  */
 function getValue(array $array, $key, $default = '') {
-    return (isset($array[$key])) ? stripslashes_deep($array[$key]) : $default;
+	return (isset($array[$key])) ? stripslashes_deep($array[$key]) : $default;
 }
 
 /**
@@ -180,7 +196,7 @@ function getValue(array $array, $key, $default = '') {
  * @return string
  */
 function __($string, $domain = APP) {
-    return I18n::translate($string, $domain);
+	return I18n::translate($string, $domain);
 }
 
 function __n($singular, $plural, $number, $domain = APP) {
@@ -194,7 +210,7 @@ function __n($singular, $plural, $number, $domain = APP) {
  * @param string $domain
  */
 function __e($string, $domain = APP) {
-    echo I18n::translate($string, $domain);
+	echo I18n::translate($string, $domain);
 }
 
 function __ne($singular, $plural, $number, $domain = APP) {
@@ -208,7 +224,7 @@ function __ne($singular, $plural, $number, $domain = APP) {
  * @return string
  */
 function h($text) {
-    return htmlspecialchars($text, ENT_QUOTES);
+	return htmlspecialchars($text, ENT_QUOTES);
 }
 
 /**
@@ -218,7 +234,7 @@ function h($text) {
  * @param type $text
  */
 function eh($text) {
-    echo h($text);
+	echo h($text);
 }
 
 
@@ -229,9 +245,9 @@ function eh($text) {
  * @return boolean
  */
 function is_indexed(array &$array) {
-    foreach (array_keys($array) as $key) {
-        if (!is_int($key))
-            return false;
-    }
-    return true;
+	foreach (array_keys($array) as $key) {
+		if (!is_int($key))
+			return false;
+	}
+	return true;
 }

@@ -16,7 +16,12 @@ class MySQLDataSource extends DataSource {
      * Instanciates the PDO connection.
      */
     public function __construct() {
-        parent::__construct("mysql:host=" . Config::get('DB.host')  . ";dbname=" . Config::get('DB.name')  . ";port=" . Config::get('DB.port'), Config::get('DB.user'), Config::get('DB.pass'), array(PDO::ATTR_PERSISTENT => true));
+        parent::__construct(
+          "mysql:host=" . Config::get('DB.host')  . ";dbname=" . Config::get('DB.name')  . ";port=" . Config::get('DB.port'), 
+          Config::get('DB.user'), 
+          Config::get('DB.pass'), 
+          array(PDO::ATTR_PERSISTENT => true, PDO::MYSQL_ATTR_INIT_COMMAND => "SET NAMES utf8") 
+        );
         $this->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
     }
 }

@@ -67,11 +67,12 @@ class FormHelper {
         $height = (int) getValue($options, 'height', 1);
         $multiple = (bool) getValue($options, 'multiple', false);
         $name = (string) getValue($options, 'name', md5(time()));
+        $id = (string) getValue($options, 'id', $name);
         $selected = (array) getValue($options, 'selected', array());
         if ($multiple)
             $name .= '[]';
 
-        $html = '<select name="' . $name . '" size="' . $height . '"' . (($multiple) ? ' multiple' : '') . '>';
+        $html = '<select name="' . $name . '" id="' . $id . '" size="' . $height . '"' . (($multiple) ? ' multiple' : '') . '>';
         foreach ($items as $value => $name)
             $html .= '<option value="' . h($value) . '"' . ((in_array($value, $selected)) ? ' selected' : '') . '>' . h($name) . '</option>';
         $html .= '</select>';

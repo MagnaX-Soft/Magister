@@ -38,9 +38,9 @@ abstract class Row {
      * prepare method, calls it.
      */
     public function __construct() {
-        $this->loadModel();
-        if (method_exists($this, 'prepare'))
-            $this->prepare();
+    	$this->loadModel();
+    	if (method_exists($this, 'prepare'))
+    		$this->prepare();
     }
 
     /**
@@ -51,10 +51,10 @@ abstract class Row {
      * @return bool
      */
     public function save() {
-        if (!empty($this->id))
-            return $this->model->up($this);
-        else
-            return $this->model->put($this);
+    	if (!empty($this->id))
+    		return $this->model->up($this);
+    	else
+    		return $this->model->put($this);
     }
 
     /**
@@ -66,21 +66,21 @@ abstract class Row {
      * @param array $data
      */
     public function update(array $data) {
-        foreach ($data as $key => $value) {
-            if ($key == 'model' || $key == 'modelName')
-                continue;
-            foreach ($this->model->hasOne as $local => $info) {
-                if (strpos($local, $key . '_') !== false) {
-                    $field = getValue($info, 'field', compat_strstr($local, '_', true));
-                    $model = getValue($info, 'model', ucfirst(Inflect::pluralize($field) . 'Model'));
+    	foreach ($data as $key => $value) {
+    		if ($key == 'model' || $key == 'modelName')
+    			continue;
+    		foreach ($this->model->hasOne as $local => $info) {
+    			if (strpos($local, $key . '_') !== false) {
+    				$field = getValue($info, 'field', compat_strstr($local, '_', true));
+    				$model = getValue($info, 'model', ucfirst(Inflect::pluralize($field) . 'Model'));
 
-                    $reflexModel = new ReflectionClass($model);
-                    $value = $reflexModel->newInstance()->getByPrimaryKey((int) $value);
-                }
-            }
-            if (isset($this->{$key}))
-                $this->{$key} = stripslashes_deep($value);
-        }
+    				$reflexModel = new ReflectionClass($model);
+    				$value = $reflexModel->newInstance()->getByPrimaryKey((int) $value);
+    			}
+    		}
+    		if (isset($this->{$key}))
+    			$this->{$key} = stripslashes_deep($value);
+    	}
     }
 
     /**
@@ -91,7 +91,7 @@ abstract class Row {
      * @return bool
      */
     public function delete() {
-        return $this->model->delete($this);
+    	return $this->model->delete($this);
     }
 
     /**
@@ -100,11 +100,11 @@ abstract class Row {
      * Loads the model.
      */
     public function loadModel() {
-        if (empty($this->modelName))
-            $this->modelName = Inflect::pluralize(get_class($this)) . 'Model';
+    	if (empty($this->modelName))
+    		$this->modelName = Inflect::pluralize(get_class($this)) . 'Model';
 
-        if (!($this->model instanceof $this->modelName))
-            $this->model = new $this->modelName;
+    	if (!($this->model instanceof $this->modelName))
+    		$this->model = new $this->modelName;
     }
 
     /**
@@ -117,10 +117,10 @@ abstract class Row {
      * @param mixed $value
      */
     public function __set($name, $value) {
-        if (strpos($name, '_'))
-            $this->relation[$name] = $value;
-        else
-            $this->{$name} = $value;
+    	if (strpos($name, '_'))
+    		$this->relation[$name] = $value;
+    	else
+    		$this->{$name} = $value;
     }
 
     /**
@@ -134,32 +134,32 @@ abstract class Row {
      */
     public function __get($name) {
         // HasOne relations
-        foreach ($this->relation as $link => $pk) {
-            list($foreignName, $field) = explode('_', $link);
-            if (ucfirst(strtolower($foreignName)) != ucfirst(strtolower($name)))
-                continue;
+    	foreach ($this->relation as $link => $pk) {
+    		list($foreignName, $field) = explode('_', $link);
+    		if (ucfirst(strtolower($foreignName)) != ucfirst(strtolower($name)))
+    			continue;
 
-            $link = strtolower($link);
-            $model = getValue($this->model->hasOne[$link], 'model', ucfirst(Inflect::pluralize($foreignName)) . 'Model');
-            $function = getValue($this->model->hasOne[$link], 'function', 'getBy' . $field);
-            $reflexModel = new ReflectionClass($model);
-            $this->{$name} = $reflexModel->newInstance()->$function($pk);
-            return $this->{$name};
-        }
+    		$link = strtolower($link);
+    		$model = getValue($this->model->hasOne[$link], 'model', ucfirst(Inflect::pluralize($foreignName)) . 'Model');
+    		$function = getValue($this->model->hasOne[$link], 'function', 'getBy' . $field);
+    		$reflexModel = new ReflectionClass($model);
+    		$this->{$name} = $reflexModel->newInstance()->$function($pk);
+    		return $this->{$name};
+    	}
         // HasMany relations
-        foreach ($this->model->hasMany as $link => $info) {
-            if (ucfirst(strtolower($link)) != ucfirst(strtolower($name)))
-                continue;
+    	foreach ($this->model->hasMany as $link => $info) {
+    		if (ucfirst(strtolower($link)) != ucfirst(strtolower($name)))
+    			continue;
 
-            $link = strtolower($link);
-            $model = getValue($info, 'model', ucfirst($link) . 'Model');
-            $reflexModel = new ReflectionClass($model);
-            $modelInst = $reflexModel->newInstance();
-            $foreign_field = getValue($info, 'field', strtolower(Inflect::singularize($this->model->getClass())) . '_' . $modelInst->primaryKey);
-            $this->{$name} = $modelInst->getAll(null, null, $foreign_field . ' = ?', array($this->{$this->model->primaryKey}))->fetchAll();
-            return $this->{$name};
-        }
-        throw new UnknownRelationException('This table (' . $this->model->getClass() . ') has no relation by the name of ' . $name);
+    		$link = strtolower($link);
+    		$model = getValue($info, 'model', ucfirst($link) . 'Model');
+    		$reflexModel = new ReflectionClass($model);
+    		$modelInst = $reflexModel->newInstance();
+    		$foreign_field = getValue($info, 'field', strtolower(Inflect::singularize($this->model->getClass())) . '_' . $modelInst->primaryKey);
+    		$this->{$name} = $modelInst->getAll(null, null, $foreign_field . ' = ?', array($this->{$this->model->primaryKey}))->fetchAll();
+    		return $this->{$name};
+    	}
+    	throw new UnknownRelationException('This table (' . $this->model->getClass() . ') has no relation by the name of ' . $name);
     }
 
     /**
@@ -171,12 +171,12 @@ abstract class Row {
      * @return boolean
      */
     public function __isset($name) {
-        try {
-            $temporary = $this->{$name};
-            return true;
-        } catch (UnknownRelationException $error) {
-            return false;
-        }
+    	try {
+    		$temporary = $this->{$name};
+    		return true;
+    	} catch (UnknownRelationException $error) {
+    		return false;
+    	}
     }
 
 }

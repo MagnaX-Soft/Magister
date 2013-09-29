@@ -110,14 +110,7 @@ class I18n {
 				continue;
 
 			if ($fileInfo->isDir() && $fileInfo->getFilename() == $this->lang) {
-				$langIterator = new DirectoryIterator($fileInfo->getPathname());
-				foreach ($langIterator as $langFileInfo) {
-					if ($langFileInfo->isDot())
-						continue;
-					list(, $extension) = explode('.', $langFileInfo->getBasename());
-					if ($langFileInfo->isFile() && $extension == 'mo')
-						$this->source->addTranslation($langFileInfo->getPathname(), $fileInfo->getBasename('.mo'));
-				}
+				$this->readDir($fileInfo->getPathname());
 			}
 
 			list(, $extension) = explode('.', $fileInfo->getBasename());
